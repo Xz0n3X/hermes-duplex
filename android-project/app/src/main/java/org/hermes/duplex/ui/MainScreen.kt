@@ -59,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -427,6 +428,25 @@ private fun Composer(session: MainSession) {
                 .padding(start = 4.dp, end = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Clears what is typed. Always there so the box does not shift as you
+            // type; dim and inert while there is nothing to clear.
+            val hasText = session.draftState.text.isNotEmpty()
+            Box(
+                Modifier
+                    .padding(start = 4.dp)
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(if (hasText) Palette.bgOverlay else Color.Transparent)
+                    .clickable(enabled = hasText) { session.draft = "" }
+                    .semantics { contentDescription = "Clear the message" },
+                contentAlignment = Alignment.Center,
+            ) {
+                Ico(
+                    R.drawable.ic_close,
+                    tint = if (hasText) Palette.textPrimary else Palette.textTertiary.copy(alpha = 0.35f),
+                    size = 18.dp,
+                )
+            }
             BasicTextField(
                 state = session.draftState,
                 modifier = Modifier
@@ -481,33 +501,15 @@ private fun Composer(session: MainSession) {
             ToolIcon(R.drawable.ic_read_aloud, stringResource(R.string.auto_read), session.readAloud) {
                 session.toggleReadAloud()
             }
+            Spacer(Modifier.weight(1f))
             // Hold to dictate into the composer, privately: the bridge
             // transcribes it and a local model tidies it, but nothing is sent.
-            // An icon like its neighbours; it lights while held.
-            Box(
-                Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(if (session.rewriteHeld) Palette.accent else Color.Transparent)
-                    .pointerInput(Unit) {
-                        detectTapGestures(onPress = {
-                            session.startRewrite()
-                            tryAwaitRelease()
-                            session.stopRewrite()
-                        })
-                    }
-                    .semantics {
-                        contentDescription = "Hold to dictate and rewrite with the local model"
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Ico(
-                    R.drawable.ic_rewrite,
-                    tint = if (session.rewriteHeld) Color.White else Palette.textTertiary,
-                    size = 22.dp,
-                )
-            }
-            Spacer(Modifier.weight(1f))
+            //
+            // Large, because it is held rather than tapped and a thumb has to
+            // find it and stay on it; and loud about being pressed -- it grows,
+            // fills with the accent, rings, buzzes once and says so -- since a
+            // hold has no click to tell you it took.
+            RewriteHold(session)
             // Tap for the orb; hold to hang up. Both are advertised in the hint
             // below while a session is live -- the long press was once the only
             // way out and nothing said so.
@@ -832,5 +834,57 @@ private fun AttachmentTile(file: Attachment, onRemove: () -> Unit) {
                 .semantics { contentDescription = "Remove ${file.name}" },
             contentAlignment = Alignment.Center,
         ) { Ico(R.drawable.ic_close, tint = Palette.bgApp, size = 14.dp) }
+    }
+}
+
+@Composable
+private fun RewriteHold(session: MainSession) {
+    val held = session.rewriteHeld
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        if (held) 1.18f else 1f, label = "rewrite-scale",
+    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (held) {
+            Text(
+                "Listening\u2026 release to finish",
+                color = Palette.accent, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(end = 10.dp),
+            )
+        }
+        Box(
+            Modifier
+                .size(64.dp)
+                .graphicsLayer { scaleX = scale; scaleY = scale }
+                .clip(CircleShape)
+                .background(if (held) Palette.accent else Palette.bgRaised)
+                .border(
+                    androidx.compose.foundation.BorderStroke(
+                        if (held) 3.dp else 1.dp,
+                        if (held) Palette.accent.copy(alpha = 0.45f) else Palette.borderDefault,
+                    ),
+                    CircleShape,
+                )
+                .pointerInput(Unit) {
+                    detectTapGestures(onPress = {
+                        haptic.performHapticFeedback(
+                            androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
+                        )
+                        session.startRewrite()
+                        tryAwaitRelease()
+                        session.stopRewrite()
+                    })
+                }
+                .semantics {
+                    contentDescription = "Hold to dictate and rewrite with the local model"
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Ico(
+                R.drawable.ic_rewrite,
+                tint = if (held) Color.White else Palette.textSecondary,
+                size = 32.dp,
+            )
+        }
     }
 }
