@@ -6,6 +6,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -67,7 +72,12 @@ fun SidebarPanel(
             .fillMaxHeight()
             .width(320.dp)
             .background(Palette.bgPanel)
-            .padding(top = 28.dp, start = 14.dp, end = 14.dp, bottom = 12.dp),
+            // The drawer is drawn edge to edge, so it has to keep clear of the
+            // status bar, the gesture / navigation bar and any cutout itself.
+            // Read live from the window, so it follows the phone's own
+            // navigation mode and rotation.
+            .windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout))
+            .padding(top = 12.dp, start = 14.dp, end = 14.dp, bottom = 12.dp),
     ) {
         // The chevron is the only hint that the heading is also a control.
         Text(
