@@ -106,18 +106,7 @@ private fun TurnRow(message: ConversationStore.Message, session: MainSession) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            // The agent's reply sits in a card -- a long answer reads as one
-            // block with edges, instead of text running into the thread. Your
-            // own words stay a bubble on the right.
-            .let { base ->
-                if (you) base
-                else base
-                    .clip(card)
-                    .background(Palette.bgRaised)
-                    .border(androidx.compose.foundation.BorderStroke(1.dp, Palette.borderDefault), card)
-                    .padding(14.dp)
-            },
+            .padding(vertical = 8.dp),
         horizontalAlignment = if (you) Alignment.End else Alignment.Start,
     ) {
         // Role label and the row's actions share a line.
@@ -158,6 +147,20 @@ private fun TurnRow(message: ConversationStore.Message, session: MainSession) {
             }
         }
 
+        // Everything below the label row is the message itself. The agent's
+        // reply sits in a card, so a long answer reads as one block with edges;
+        // the label and the actions stay above it, outside, exactly where they
+        // are on your own messages. Yours stays a bubble on the right.
+        Column(
+            modifier = if (you) Modifier else Modifier
+                .padding(top = 4.dp)
+                .fillMaxWidth()
+                .clip(card)
+                .background(Palette.bgRaised)
+                .border(androidx.compose.foundation.BorderStroke(1.dp, Palette.borderDefault), card)
+                .padding(14.dp),
+            horizontalAlignment = if (you) Alignment.End else Alignment.Start,
+        ) {
         MediaBlock(message)
 
         // Markdown is rendered even though the system prompt forbids it: the
@@ -220,6 +223,7 @@ private fun TurnRow(message: ConversationStore.Message, session: MainSession) {
         }
 
         DetailBlock(message, session)
+        }
     }
 }
 

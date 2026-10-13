@@ -921,15 +921,16 @@ private fun CollapsedSuggestions(session: MainSession, modifier: Modifier) {
             .semantics { contentDescription = "Show $count suggestion${if (count == 1) "" else "s"}" },
         contentAlignment = Alignment.Center,
     ) {
-        Ico(R.drawable.ic_idea, tint = Palette.accent, size = 24.dp)
-        // How many are waiting, as a small badge.
-        Box(
-            Modifier
-                .align(Alignment.TopEnd)
-                .size(18.dp)
-                .clip(CircleShape)
-                .background(Palette.accent),
-            contentAlignment = Alignment.Center,
-        ) { Text("$count", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+        // The bulb, with how many are waiting written on its glass: no badge
+        // circle of its own, which would be a second shape for one number.
+        Ico(R.drawable.ic_idea, tint = Palette.accent, size = 30.dp)
+        Text(
+            "$count",
+            color = Palette.bgApp,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            // The bulb's glass is in the upper part of the icon, above the base.
+            modifier = Modifier.offset(y = (-3).dp),
+        )
     }
 }
