@@ -979,6 +979,34 @@ class MainSession(private val activity: ComponentActivity) {
     }
 
     /**
+     * Clear the message, and start clean.
+     *
+     * Clearing what you typed while the phone is still reading a reply out, or
+     * a voice session is still running, left the voice going over a screen that
+     * had been wiped -- disruptive, and nothing short of leaving the app would
+     * stop it. So this also: stops what is being read and empties the queue
+     * behind it, ends a live voice session (microphone, speaker and orb), and
+     * puts the voice screen back to a fresh start.
+     *
+     * It does not stop the agent's work or switch reading-aloud off: the next
+     * reply is still read if that is on, it just does not start in the middle
+     * of the last one.
+     */
+    fun clearInput() {
+        draft = ""
+        Speaker.stop()
+        speakingKey = null
+        if (client?.duplex == true) {
+            endVoice()
+        } else {
+            showVoiceStage(false)
+            clearVoiceStage()
+            badge = null
+            refreshFlags()
+        }
+    }
+
+    /**
      * Tones for the rewrite button: one on press, a different one on release.
      *
      * A hold has no click to say it registered, and the microphone opens a

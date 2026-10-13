@@ -431,19 +431,22 @@ private fun Composer(session: MainSession) {
             // Clears what is typed. Always there so the box does not shift as you
             // type; dim and inert while there is nothing to clear.
             val hasText = session.draftState.text.isNotEmpty()
+            // Lit when there is anything to clear: typed text, or a voice
+            // session or a reading that this will also end.
+            val canClear = hasText || session.duplex || session.speakingKey != null
             Box(
                 Modifier
                     .padding(start = 4.dp)
                     .size(34.dp)
                     .clip(CircleShape)
-                    .background(if (hasText) Palette.bgOverlay else Color.Transparent)
-                    .clickable(enabled = hasText) { session.draft = "" }
-                    .semantics { contentDescription = "Clear the message" },
+                    .background(if (canClear) Palette.bgOverlay else Color.Transparent)
+                    .clickable(enabled = canClear) { session.clearInput() }
+                    .semantics { contentDescription = "Clear the message and stop any voice" },
                 contentAlignment = Alignment.Center,
             ) {
                 Ico(
                     R.drawable.ic_close,
-                    tint = if (hasText) Palette.textPrimary else Palette.textTertiary.copy(alpha = 0.35f),
+                    tint = if (canClear) Palette.textPrimary else Palette.textTertiary.copy(alpha = 0.35f),
                     size = 18.dp,
                 )
             }
