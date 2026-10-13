@@ -8,11 +8,17 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.content.ReceiveContentListener
+import androidx.compose.foundation.content.TransferableContent
+import androidx.compose.foundation.content.consume
+import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -50,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -72,7 +79,7 @@ import org.hermes.duplex.Sidebar
 import org.hermes.duplex.ui.theme.Palette
 
 /** Where the overflow menu can send you. */
-enum class Destination { SETTINGS, TIMING, DEBUG, USAGE, REMOTES }
+enum class Destination { SETTINGS, TIMING, DEBUG, USAGE, REMOTES, FILES }
 
 /**
  * The chat screen, and the voice stage that folds down over it.
@@ -191,6 +198,7 @@ private fun TopBar(session: MainSession, onMenu: () -> Unit, onNavigate: (Destin
                     onClick = { menu = false; action() },
                 )
                 item(stringResource(R.string.action_new)) { session.newConversation() }
+                item("Files") { onNavigate(Destination.FILES) }
                 item(stringResource(R.string.timing)) { onNavigate(Destination.TIMING) }
                 item(stringResource(R.string.usage)) { onNavigate(Destination.USAGE) }
                 item(stringResource(R.string.remotes)) { onNavigate(Destination.REMOTES) }
@@ -384,6 +392,7 @@ private fun SuggestionStrip(session: MainSession) {
 
 // -- composer ---------------------------------------------------------------------------------------------------
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun Composer(session: MainSession) {
     val keyboard = LocalSoftwareKeyboardController.current
@@ -410,6 +419,22 @@ private fun Composer(session: MainSession) {
             )
         }
 
+        // What is attached, as chat apps show it: an image is a small
+        // thumbnail with an X in its corner, any other file is a name with an X.
+        // Both appear the moment the file is chosen or pasted, while it is still
+        // uploading, and the X works at any point -- it calls the upload back.
+        if (session.attachments.isNotEmpty()) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(bottom = 8.dp, top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                session.attachments.forEach { file -> AttachmentTile(file) { session.removeAttachment(file) } }
+            }
+        }
+
         Row(
             Modifier
                 .fillMaxWidth()
@@ -423,7 +448,18 @@ private fun Composer(session: MainSession) {
                 value = session.draft,
                 onValueChange = { session.draft = it },
                 placeholder = { Text(stringResource(R.string.composer_hint), color = Palette.textTertiary) },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    // An image sent by the keyboard (its "paste screenshot"
+                    // suggestion, or a drag-and-drop) becomes an attachment.
+                    .contentReceiver(object : ReceiveContentListener {
+                        override fun onReceive(transferableContent: TransferableContent): TransferableContent? =
+                            transferableContent.consume { item ->
+                                val uri = item.uri
+                                if (uri != null) session.attachFromKeyboard(uri)
+                                uri != null
+                            }
+                    }),
                 maxLines = 5,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
                 colors = TextFieldDefaults.colors(
@@ -451,6 +487,8 @@ private fun Composer(session: MainSession) {
                 .padding(top = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            ToolText("\uD83D\uDCCE", "Attach files", Palette.textSecondary) { session.pickAttachments() }
+            ToolText("\uD83D\uDCCB", "Paste from clipboard", Palette.textSecondary) { session.pasteFromClipboard() }
             ToolIcon(R.drawable.ic_recall, stringResource(R.string.recall_next), session.recallArmed) {
                 session.toggleRecall()
             }
@@ -737,4 +775,76 @@ private fun ApprovalDialog(session: MainSession) {
             }
         },
     )
+}
+
+private fun sizeLabel(bytes: Long): String = when {
+    bytes < 0 -> ""
+    bytes < 1024 -> "$bytes B"
+    bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+    else -> String.format("%.1f MB", bytes / 1048576.0)
+}
+
+@Composable
+private fun AttachmentTile(file: Attachment, onRemove: () -> Unit) {
+    val failed = file.state == UploadState.FAILED
+    val border = androidx.compose.foundation.BorderStroke(1.dp, if (failed) Palette.statusFailed else Palette.borderDefault)
+    // The corner X overhangs the tile a little, as it does in a browser chat.
+    Box(Modifier.padding(top = 6.dp, end = 6.dp)) {
+        val thumb = file.thumbnail
+        if (thumb != null) {
+            Box(
+                Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(border, RoundedCornerShape(12.dp)),
+            ) {
+                androidx.compose.foundation.Image(
+                    bitmap = thumb.asImageBitmap(), contentDescription = file.name,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                if (file.state != UploadState.DONE) {
+                    Box(Modifier.fillMaxSize().background(Color(0x99000000)), contentAlignment = Alignment.Center) {
+                        if (failed) Text("!", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        else androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp), strokeWidth = 2.dp, color = Color.White,
+                        )
+                    }
+                }
+            }
+        } else {
+            Column(
+                Modifier
+                    .heightIn(min = 44.dp)
+                    .widthIn(max = 190.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Palette.bgRaised)
+                    .border(border, RoundedCornerShape(12.dp))
+                    .padding(start = 12.dp, end = 18.dp, top = 6.dp, bottom = 6.dp),
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(file.name, color = Palette.textPrimary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    when (file.state) {
+                        UploadState.UPLOADING -> "uploading…"
+                        UploadState.DONE -> sizeLabel(file.bytes)
+                        UploadState.FAILED -> file.error
+                    },
+                    color = if (failed) Palette.statusFailed else Palette.textTertiary,
+                    fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 6.dp, y = (-6).dp)
+                .size(22.dp)
+                .clip(CircleShape)
+                .background(Palette.textPrimary)
+                .clickable(onClick = onRemove)
+                .semantics { contentDescription = "Remove ${file.name}" },
+            contentAlignment = Alignment.Center,
+        ) { Text("\u2715", color = Palette.bgApp, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+    }
 }

@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
                         Destination.DEBUG -> DebugActivity::class.java
                         Destination.USAGE -> UsageActivity::class.java
                         Destination.REMOTES -> RemotesActivity::class.java
+                        Destination.FILES -> FilesActivity::class.java
                     }
                     startActivity(Intent(this, target))
                 }

@@ -8,6 +8,10 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.provider.OpenableColumns
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okio.source
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,6 +40,20 @@ enum class Tone {
 }
 
 data class Badge(val text: String, val tone: Tone)
+
+/** A file on its way to, or already on, the bridge's machine. */
+data class Attachment(
+    val id: Long,
+    val name: String,
+    val bytes: Long,
+    val state: UploadState,
+    /** Where it is on the bridge's machine, once it has arrived. */
+    val path: String = "",
+    val error: String = "",
+    val thumbnail: android.graphics.Bitmap? = null,
+)
+
+enum class UploadState { UPLOADING, DONE, FAILED }
 
 /** A confirmation or a small form that is open over the chat. */
 sealed interface Dialog {
@@ -131,6 +149,10 @@ class MainSession(private val activity: ComponentActivity) {
     /** The composer's text. Held here so a rewrite can fill it. */
     var draft by mutableStateOf("")
 
+    /** Files waiting to go with the next message. */
+    var attachments by mutableStateOf<List<Attachment>>(emptyList())
+        private set
+
     /** The room's loudness, 10 times a second. Read by the orb each frame. */
     @Volatile
     var rms: Double = 0.0
@@ -140,6 +162,12 @@ class MainSession(private val activity: ComponentActivity) {
 
     private var seenRevision = -1
     private var connecting = false
+    private var nextAttachmentId = 1L
+    private val uploadCalls = java.util.concurrent.ConcurrentHashMap<Long, okhttp3.Call>()
+    private val uploader = okhttp3.OkHttpClient.Builder()
+        .callTimeout(15, java.util.concurrent.TimeUnit.MINUTES)
+        .writeTimeout(5, java.util.concurrent.TimeUnit.MINUTES)
+        .build()
     private var micRefused = false
     private var autoConnectSuspended = false
     private var pendingAction: (() -> Unit)? = null
@@ -161,6 +189,10 @@ class MainSession(private val activity: ComponentActivity) {
         }
         pendingAction = null
     }
+
+    private val pickFiles = activity.registerForActivityResult(
+        ActivityResultContracts.OpenMultipleDocuments()
+    ) { uris -> if (uris.isNotEmpty()) attachUris(uris) }
 
     init {
         EventLog.appVersion = BuildConfig.VERSION_NAME
@@ -655,9 +687,223 @@ class MainSession(private val activity: ComponentActivity) {
     /** Send what is typed. */
     fun send() {
         val text = draft.trim()
-        if (text.isEmpty()) return
+        if (attachments.any { it.state == UploadState.UPLOADING }) {
+            toast("Still uploading — one moment")
+            return
+        }
+        val ready = attachments.filter { it.state == UploadState.DONE }
+        val failed = attachments.count { it.state == UploadState.FAILED }
+        if (text.isEmpty() && ready.isEmpty()) {
+            if (failed > 0) toast("The upload failed, so there is nothing to send")
+            return
+        }
+        if (failed > 0) toast("$failed file${if (failed == 1) "" else "s"} failed to upload and ${if (failed == 1) "was" else "were"} left out")
+        val message = withAttachments(text, ready)
         draft = ""
-        submit(text)
+        attachments = emptyList()
+        submit(message)
+    }
+
+    // -- attachments -------------------------------------------------------------------
+
+    /**
+     * Files go to the bridge for real, and the message names where they landed.
+     *
+     * Each is streamed to `POST /upload` as soon as it is picked or pasted, so
+     * by the time Send is pressed the file is already on the Mac, in the open
+     * project's upload folder, and the message simply quotes its path. That
+     * works for anything -- a screenshot, a PDF, a log -- because the agent
+     * reads it from disk like any other file, rather than having its bytes
+     * squeezed through the text channel.
+     *
+     * The folder is the bridge's choice. The phone sends a project name and a
+     * file name, never a location.
+     */
+    fun pickAttachments() = pickFiles.launch(arrayOf("*/*"))
+
+    fun removeAttachment(attachment: Attachment) {
+        // A file still on its way is called back, not just hidden.
+        uploadCalls.remove(attachment.id)?.cancel()
+        attachments = attachments.filterNot { it.id == attachment.id }
+    }
+
+    /**
+     * Paste whatever is on the clipboard: images and files are uploaded, text is
+     * added to the message. Screenshots are the reason this exists -- copy one
+     * from any app, come here, paste.
+     */
+    fun pasteFromClipboard() {
+        val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = clipboard.primaryClip
+        if (clip == null || clip.itemCount == 0) {
+            toast("The clipboard is empty")
+            return
+        }
+        val uris = mutableListOf<android.net.Uri>()
+        val text = StringBuilder()
+        for (index in 0 until clip.itemCount) {
+            val item = clip.getItemAt(index)
+            if (item.uri != null) uris += item.uri
+            else item.text?.let { if (text.isNotEmpty()) text.append('\n'); text.append(it) }
+        }
+        if (text.isNotEmpty()) draft = if (draft.isEmpty()) text.toString() else draft + "\n" + text
+        if (uris.isNotEmpty()) attachUris(uris)
+        if (uris.isEmpty() && text.isEmpty()) toast("Nothing on the clipboard can be pasted")
+    }
+
+    /**
+     * Take a file handed over by the keyboard (a pasted or dragged-in image).
+     *
+     * The keyboard's permission to read it is lent for the duration of the
+     * callback, so it is copied into the cache right now, before returning,
+     * and the upload works from the copy.
+     */
+    fun attachFromKeyboard(uri: android.net.Uri) {
+        val mime = activity.contentResolver.getType(uri).orEmpty()
+        val copy = runCatching {
+            val file = java.io.File(activity.cacheDir, "pasted-${System.nanoTime()}${extensionFor(mime)}")
+            activity.contentResolver.openInputStream(uri)?.use { input ->
+                file.outputStream().use { out -> out.write(readUpTo(input, IMAGE_IN_MEMORY.toInt())) }
+            }
+            file
+        }.getOrNull()
+        if (copy == null) { toast("Could not read what the keyboard sent"); return }
+        attachUris(listOf(android.net.Uri.fromFile(copy)), mimeOverride = mime)
+    }
+
+    private fun attachUris(uris: List<android.net.Uri>, mimeOverride: String? = null) {
+        for (uri in uris) {
+            val id = nextAttachmentId++
+            val mime = mimeOverride ?: activity.contentResolver.getType(uri).orEmpty()
+            var name = displayName(uri)
+            // A pasted screenshot arrives with no useful name at all.
+            if (name.isBlank() || name == "file" || name.all { it.isDigit() }) {
+                name = "pasted-" + java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US)
+                    .format(java.util.Date()) + extensionFor(mime)
+            }
+            val size = sizeOf(uri)
+            attachments = attachments + Attachment(id, name, size, UploadState.UPLOADING)
+            Thread { upload(id, uri, name, mime, size) }.start()
+        }
+    }
+
+    private fun upload(id: Long, uri: android.net.Uri, name: String, mime: String, size: Long) {
+        try {
+            // Images are read whole: the thumbnail wants the bytes anyway, and a
+            // screenshot is small. Everything else is streamed, so a large file
+            // never has to fit in memory.
+            val isImage = mime.startsWith("image/") && size in 0..IMAGE_IN_MEMORY
+            val bytes = if (isImage) activity.contentResolver.openInputStream(uri)?.use { it.readBytes() } else null
+            val thumb = bytes?.let { thumbnailOf(it) }
+            // On screen straight away, before the upload has finished.
+            if (thumb != null) finishUpload(id) { it.copy(thumbnail = thumb) }
+            val body = object : okhttp3.RequestBody() {
+                override fun contentType() = mime.ifBlank { "application/octet-stream" }.toMediaTypeOrNull()
+                override fun contentLength() = bytes?.size?.toLong() ?: size
+                override fun writeTo(sink: okio.BufferedSink) {
+                    if (bytes != null) sink.write(bytes)
+                    else (activity.contentResolver.openInputStream(uri)
+                        ?: throw java.io.IOException("could not read the file")).use { sink.writeAll(it.source()) }
+                }
+            }
+            val url = uploadBase().toHttpUrl().newBuilder()
+                .addPathSegment("upload")
+                .addQueryParameter("name", name)
+                .addQueryParameter("scope", uploadScope())
+                .build()
+            val request = okhttp3.Request.Builder().url(url).post(body).build()
+            val call = uploader.newCall(request)
+            uploadCalls[id] = call
+            call.execute().use { response ->
+                val text = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    val why = runCatching { JSONObject(text).optString("detail") }.getOrDefault("")
+                    throw java.io.IOException(why.ifBlank { "the bridge said ${response.code}" })
+                }
+                val reply = JSONObject(text)
+                finishUpload(id) { it.copy(
+                    state = UploadState.DONE, path = reply.getString("path"),
+                    name = reply.optString("name", name), bytes = reply.optLong("bytes", size),
+                    thumbnail = thumb,
+                ) }
+            }
+        } catch (e: Exception) {
+            // Removing a tile cancels its call, which surfaces here as an
+            // exception; that is not a failure anyone should be told about.
+            if (uploadCalls.remove(id) != null || attachments.any { it.id == id }) {
+                EventLog.add("upload of $name failed: ${e.message}")
+                finishUpload(id) { it.copy(state = UploadState.FAILED, error = e.message ?: e.javaClass.simpleName) }
+            }
+        } finally {
+            uploadCalls.remove(id)
+        }
+    }
+
+    private fun finishUpload(id: Long, change: (Attachment) -> Attachment) {
+        handler.post { attachments = attachments.map { if (it.id == id) change(it) else it } }
+    }
+
+    /** The bridge's HTTP address: the socket's, with the scheme swapped. */
+    private fun uploadBase(): String {
+        val ws = if (client != null) DuplexClient.lastUrl else SettingsActivity.serverUrl(activity)
+        return ws.replaceFirst("ws://", "http://").replaceFirst("wss://", "https://").removeSuffix("/ws")
+    }
+
+    /** Which project's folder these belong in, as the bridge knows the project. */
+    private fun uploadScope(): String =
+        if (Sidebar.cli.enabled) Sidebar.cli.activeProject?.name ?: Sidebar.cli.id.ifBlank { "agent" }
+        else Sidebar.activeProject?.name ?: "chat"
+
+    /** At most [limit] bytes (InputStream.readNBytes needs Android 13). */
+    private fun readUpTo(input: java.io.InputStream, limit: Int): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(16 * 1024)
+        while (out.size() < limit) {
+            val n = input.read(buffer, 0, minOf(buffer.size, limit - out.size()))
+            if (n < 0) break
+            out.write(buffer, 0, n)
+        }
+        return out.toByteArray()
+    }
+
+    private fun sizeOf(uri: android.net.Uri): Long = runCatching {
+        activity.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
+            ?.use { if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else -1L }
+    }.getOrNull() ?: -1L
+
+    private fun extensionFor(mime: String): String = when {
+        mime == "image/png" -> ".png"
+        mime == "image/jpeg" -> ".jpg"
+        mime == "image/webp" -> ".webp"
+        mime == "image/gif" -> ".gif"
+        mime == "application/pdf" -> ".pdf"
+        mime.startsWith("text/") -> ".txt"
+        else -> ""
+    }
+
+    private fun thumbnailOf(bytes: ByteArray): android.graphics.Bitmap? = runCatching {
+        val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        var sample = 1
+        while (bounds.outWidth / (sample * 2) >= 160 && bounds.outHeight / (sample * 2) >= 160) sample *= 2
+        android.graphics.BitmapFactory.decodeByteArray(
+            bytes, 0, bytes.size, android.graphics.BitmapFactory.Options().apply { inSampleSize = sample },
+        )
+    }.getOrNull()
+
+    private fun displayName(uri: android.net.Uri): String =
+        runCatching {
+            activity.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { if (it.moveToFirst()) it.getString(0) else null }
+        }.getOrNull() ?: uri.lastPathSegment ?: "file"
+
+    /** The message, followed by where each file is on the machine the agent runs on. */
+    private fun withAttachments(text: String, files: List<Attachment>): String {
+        if (files.isEmpty()) return text
+        val out = StringBuilder(text.ifEmpty { "(see the attached ${if (files.size == 1) "file" else "files"})" })
+        out.append("\n\nAttached ${if (files.size == 1) "file" else "files"} (saved on this machine; read them from these paths):")
+        files.forEach { out.append("\n- ").append(it.path) }
+        return out.toString()
     }
 
     /** Send [text] as a turn, opening the socket first if need be. */
@@ -1121,6 +1367,8 @@ class MainSession(private val activity: ComponentActivity) {
     fun toast(message: String) = Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
 
     companion object {
+        /** Images up to this size are read whole, for the thumbnail. */
+        private const val IMAGE_IN_MEMORY = 12L * 1024 * 1024
         private const val PREF_USAGE_CACHE = "usage_cache"
         private const val PREF_USAGE_CACHE_AT = "usage_cache_at"
 

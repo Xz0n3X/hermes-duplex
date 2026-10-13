@@ -59,6 +59,9 @@
         <activity android:name=".VoiceBrowserActivity" android:exported="false"
             android:windowSoftInputMode="adjustResize"
             android:label="@string/more_voices" android:parentActivityName=".MainActivity" />
+        <activity android:name=".FilesActivity" android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:label="Files" android:parentActivityName=".MainActivity" />
         <activity android:name=".TimingActivity" android:exported="false"
             android:label="@string/timing" android:parentActivityName=".MainActivity" />
 
@@ -72,6 +75,18 @@
                 <data android:scheme="wear" android:host="*" android:pathPrefix="/hermes" />
             </intent-filter>
         </service>
+
+        <!-- Hands a workspace file to another app ("Open with..."), one file
+             at a time and read-only, never the folder. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <service
             android:name=".DuplexService"
