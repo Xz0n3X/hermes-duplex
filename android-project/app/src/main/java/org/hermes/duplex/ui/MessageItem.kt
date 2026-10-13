@@ -267,7 +267,7 @@ private fun DetailBlock(message: ConversationStore.Message, session: MainSession
     if (!open) return
     Column(Modifier.fillMaxWidth()) {
         message.steps.forEachIndexed { index, step ->
-            StepRow(step, loading = message.turnId in session.outputsLoading) { session.toggleStep(message, index) }
+            StepRow(step, loading = "${message.turnId}#$index" in session.outputsLoading) { session.toggleStep(message, index) }
         }
     }
 }

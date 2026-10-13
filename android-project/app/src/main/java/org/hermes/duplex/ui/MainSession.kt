@@ -139,7 +139,7 @@ class MainSession(private val activity: ComponentActivity) {
         private set
     var approval by mutableStateOf<Approvals.Request?>(null)
         private set
-    /** Turns whose step outputs have been asked for and not yet received. */
+    /** Steps ("turn#index") whose output has been asked for and not yet received. */
     var outputsLoading by mutableStateOf<Set<String>>(emptySet())
         private set
     var usage by mutableStateOf<JSONObject?>(null)
@@ -539,16 +539,22 @@ class MainSession(private val activity: ComponentActivity) {
             // rather than leaving a dialog whose buttons now do nothing.
             "approval_closed" -> approval = Approvals.oldest()
             "agent_detail" -> {
-                val id = event.optString("id")
-                // The fresh steps replace the old ones, which would close
-                // whatever the reader had open; put those back.
-                val wasOpen = ConversationStore.snapshot()
-                    .firstOrNull { it.turnId == id }?.steps.orEmpty()
-                    .withIndex().filter { it.value.expanded }.map { it.index }
-                ConversationStore.detail(id, stepsOf(event), loading = false)
-                wasOpen.forEach { ConversationStore.toggleStep(id, it) }
-                outputsLoading = outputsLoading - id
+                ConversationStore.detail(event.optString("id"), stepsOf(event), loading = false)
                 refreshConversation()
+            }
+            "agent_step" -> {
+                val id = event.optString("id")
+                val index = event.optInt("step", -1)
+                outputsLoading = outputsLoading - "$id#$index"
+                val tool = event.optJSONObject("tool")
+                if (tool != null) {
+                    val out = tool.optString("output")
+                    ConversationStore.stepOutput(
+                        id, index,
+                        if (tool.optBoolean("truncated")) "$out\n\u2026 (shortened)" else out,
+                    )
+                    refreshConversation()
+                }
             }
             "recall_armed" -> recallArmed = DuplexClient.recallArmed
             "recalled" -> {
@@ -1237,25 +1243,28 @@ class MainSession(private val activity: ComponentActivity) {
     }
 
     /**
-     * Open or close one step. The first time a step is opened its output is
-     * fetched, because a turn's steps arrive as names and commands only: the
-     * transcripts run to megabytes, nearly all of it tool output nobody asked
-     * to see, so the bridge sends that one turn's outputs when asked. Without
-     * the ask every step opened onto "(no output)".
+     * Open or close one step. Opening it fetches *that step's* output, once.
+     *
+     * A turn's steps arrive as names and commands only: the transcripts run to
+     * megabytes, nearly all of it tool output nobody asked to see. So output is
+     * requested per step, on the tap that opens it, and one small message
+     * comes back -- opening one step does not pull in its neighbours.
      */
     fun toggleStep(message: ConversationStore.Message, index: Int) {
         val step = message.steps.getOrNull(index)
         ConversationStore.toggleStep(message.turnId, index)
+        val ask = "${message.turnId}#$index"
         if (step != null && !step.expanded && step.output.isBlank() &&
-            message.turnId.isNotEmpty() && message.turnId !in outputsLoading
+            message.turnId.isNotEmpty() && ask !in outputsLoading
         ) {
-            outputsLoading = outputsLoading + message.turnId
+            outputsLoading = outputsLoading + ask
             client?.sendCommand(
                 JSONObject()
-                    .put("type", "agent_detail")
+                    .put("type", "agent_step")
                     .put("key", Sidebar.cli.activeKey)
                     .put("id", Sidebar.cli.activeSession)
                     .put("turn", message.turnId)
+                    .put("step", index)
             )
         }
         refreshConversation()

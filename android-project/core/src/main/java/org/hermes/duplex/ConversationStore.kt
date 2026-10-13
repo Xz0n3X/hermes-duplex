@@ -418,6 +418,17 @@ object ConversationStore {
         }
     }
 
+    /** File one step's output once it has been fetched. */
+    @Synchronized
+    fun stepOutput(turnId: String, index: Int, output: String) {
+        edit(turnId) { message ->
+            if (index !in message.steps.indices) return@edit message
+            val steps = message.steps.toMutableList()
+            steps[index] = steps[index].copy(output = output)
+            message.copy(steps = steps)
+        }
+    }
+
     private fun edit(turnId: String, change: (Message) -> Message) {
         if (turnId.isEmpty()) return
         val index = messages.indexOfFirst { it.turnId == turnId }
