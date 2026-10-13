@@ -267,7 +267,7 @@ private fun DetailBlock(message: ConversationStore.Message, session: MainSession
     if (!open) return
     Column(Modifier.fillMaxWidth()) {
         message.steps.forEachIndexed { index, step ->
-            StepRow(step) { session.toggleStep(message, index) }
+            StepRow(step, loading = message.turnId in session.outputsLoading) { session.toggleStep(message, index) }
         }
     }
 }
@@ -278,7 +278,7 @@ private fun DetailBlock(message: ConversationStore.Message, session: MainSession
  * single `Read` returned is another.
  */
 @Composable
-private fun StepRow(step: ConversationStore.Step, onToggle: () -> Unit) {
+private fun StepRow(step: ConversationStore.Step, loading: Boolean, onToggle: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -326,7 +326,10 @@ private fun StepRow(step: ConversationStore.Step, onToggle: () -> Unit) {
                         )
                     }
                     Text(
-                        text = "OUTPUT\n" + step.output.ifBlank { stringResource(R.string.cli_step_silent) },
+                        text = "OUTPUT\n" + step.output.ifBlank {
+                            // Not yet fetched is not the same as silent.
+                            if (loading) "Loading…" else stringResource(R.string.cli_step_silent)
+                        },
                         color = Palette.textTertiary,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 11.sp,
