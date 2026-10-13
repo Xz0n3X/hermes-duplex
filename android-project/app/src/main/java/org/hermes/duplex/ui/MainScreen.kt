@@ -18,6 +18,7 @@ import androidx.compose.foundation.text.input.TextFieldDecorator
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
@@ -482,18 +483,11 @@ private fun Composer(session: MainSession) {
             }
             // Hold to dictate into the composer, privately: the bridge
             // transcribes it and a local model tidies it, but nothing is sent.
-            Text(
-                text = stringResource(
-                    if (session.rewriteHeld) R.string.rewrite_release else R.string.rewrite_hold
-                ),
-                color = if (session.rewriteHeld) Color.White else Palette.textSecondary,
-                fontSize = 11.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 6.dp)
-                    .clip(RoundedCornerShape(14.dp))
+            // An icon like its neighbours; it lights while held.
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
                     .background(if (session.rewriteHeld) Palette.accent else Color.Transparent)
                     .pointerInput(Unit) {
                         detectTapGestures(onPress = {
@@ -502,8 +496,18 @@ private fun Composer(session: MainSession) {
                             session.stopRewrite()
                         })
                     }
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-            )
+                    .semantics {
+                        contentDescription = "Hold to dictate and rewrite with the local model"
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Ico(
+                    R.drawable.ic_rewrite,
+                    tint = if (session.rewriteHeld) Color.White else Palette.textTertiary,
+                    size = 22.dp,
+                )
+            }
+            Spacer(Modifier.weight(1f))
             // Tap for the orb; hold to hang up. Both are advertised in the hint
             // below while a session is live -- the long press was once the only
             // way out and nothing said so.
