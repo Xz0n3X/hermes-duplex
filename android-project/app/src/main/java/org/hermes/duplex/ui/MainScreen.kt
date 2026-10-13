@@ -478,10 +478,18 @@ private fun Composer(session: MainSession) {
             if (session.busy) {
                 IconTap(R.drawable.ic_stop, "Stop", { session.stop() }, tint = Palette.statusFailed, size = 22.dp, target = 44.dp)
             }
-            ToolText("Send", "Send", Palette.accent, bold = true) {
-                keyboard?.hide()
-                session.send()
-            }
+            // A paper airplane, like every other tool here an icon. Lit when there
+            // is something to send -- typed text, or a file that has arrived --
+            // and dim when there is not.
+            val canSend = hasText || session.attachments.any { it.state == UploadState.DONE }
+            IconTap(
+                R.drawable.ic_send, "Send", {
+                    keyboard?.hide()
+                    session.send()
+                },
+                tint = if (canSend) Palette.accent else Palette.textTertiary.copy(alpha = 0.4f),
+                size = 26.dp, target = 48.dp,
+            )
         }
 
         Row(

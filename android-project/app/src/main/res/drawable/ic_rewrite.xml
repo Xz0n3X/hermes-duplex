@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A wand with a square cap and three sparkles: speak, and the local model
-     tidies it into a message. Drawn so the visible shape, not its box, is
+<!-- A pencil with three sparkles around it: speak, and the local model writes
+     it up as a message. The pencil has an eraser, a ferrule band, a body and a
+     sharpened tip with a lead point, each separated by a gap so it reads as a
+     pencil and not as a stick. Drawn so the visible shape, not its box, is
      centred in the 24 x 24 square. One tone, tinted where it is used. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
@@ -9,5 +11,5 @@
     android:viewportHeight="24">
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M3.94,21.27L12.25,12.96L10.81,11.52L2.50,19.83ZM12.80,13.51L15.15,11.16L12.61,8.62L10.25,10.97ZM16.98,2.73L17.88,6.08L21.22,6.98L17.88,7.88L16.98,11.23L16.07,7.88L12.73,6.98L16.07,6.08ZM19.47,13.16L19.90,14.76L21.50,15.20L19.90,15.63L19.47,17.23L19.04,15.63L17.44,15.20L19.04,14.76ZM8.20,3.38L8.64,4.98L10.24,5.41L8.64,5.84L8.20,7.44L7.77,5.84L6.17,5.41L7.77,4.98Z" />
+        android:pathData="M3.51,20.90L5.17,20.34L4.08,19.24ZM5.63,20.14L8.08,18.94L5.47,16.34L4.27,18.79ZM8.41,18.62L12.97,14.05L10.36,11.44L5.80,16.01ZM13.30,13.73L14.34,12.68L11.73,10.07L10.69,11.12ZM14.67,12.36L16.49,10.53L13.88,7.92L12.06,9.75ZM5.54,5.31L6.19,7.71L8.59,8.36L6.19,9.00L5.54,11.40L4.90,9.00L2.50,8.36L4.90,7.71ZM19.01,15.46L19.54,17.42L21.50,17.95L19.54,18.48L19.01,20.44L18.48,18.48L16.52,17.95L18.48,17.42ZM10.71,3.10L11.08,4.48L12.46,4.85L11.08,5.22L10.71,6.60L10.34,5.22L8.96,4.85L10.34,4.48Z" />
 </vector>
