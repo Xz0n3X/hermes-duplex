@@ -639,7 +639,19 @@ class DuplexClient(
                 // project is a directory there with its own memory, and a
                 // client that guessed at it would show a project the agent is
                 // not actually reading from.
-                if (kind == "projects") Sidebar.accept(event)
+                if (kind == "projects") {
+                    Sidebar.accept(event)
+                    // Whichever command-line agent is being followed is the
+                    // engine to ask for again after a reconnect. Learned from
+                    // the sidebar, which the bridge keeps sending, so it is
+                    // known without the user ever opening Settings -- and a
+                    // fresh connection that is still on Hermes (no agent
+                    // section) can never overwrite it.
+                    if (Sidebar.cli.enabled && Sidebar.cli.id.isNotBlank()) {
+                        context.getSharedPreferences("hermes-duplex", Context.MODE_PRIVATE)
+                            .edit().putString("engine", Sidebar.cli.id).apply()
+                    }
+                }
                 // A question the agent is blocked on. Recorded here rather
                 // than handed straight to a screen, because the screen that
                 // has to answer it is often not attached when it arrives.
