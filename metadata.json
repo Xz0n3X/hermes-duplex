@@ -1,0 +1,8 @@
+{
+  "name": "Hermes Duplex Studio",
+  "description": "Inspect and refine the Hermes Duplex Android app and bridge architecture with Google Drive integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
