@@ -1244,7 +1244,6 @@ class MainSession(private val activity: ComponentActivity) {
             .firstOrNull { it.role == ConversationStore.Role.YOU }?.text.orEmpty()
         val turn = message.turnId.ifEmpty { message.at.toString() }
         suggestingTurn = turn
-        toast("Thinking of suggestions\u2026")
         withConnection {
             client?.sendCommand(
                 JSONObject()
@@ -1259,15 +1258,9 @@ class MainSession(private val activity: ComponentActivity) {
     /** Bring back the offers a particular reply made. */
     fun restoreSuggestions(message: ConversationStore.Message) {
         if (message.suggestions.isEmpty()) return
+        // No toast: the strip above the input filling is the confirmation.
         DuplexClient.showSuggestions(message.suggestions)
         refreshOffers()
-        toast(
-            activity.resources.getString(
-                if (message.suggestions.size == 1) R.string.restored_suggestions
-                else R.string.restored_suggestions_plural,
-                message.suggestions.size,
-            )
-        )
     }
 
     // -- per-message actions -------------------------------------------------------------------------------------
