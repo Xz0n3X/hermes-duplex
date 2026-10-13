@@ -15,6 +15,7 @@ import okio.source
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -146,8 +147,20 @@ class MainSession(private val activity: ComponentActivity) {
         private set
     var dialog by mutableStateOf<Dialog?>(null)
 
-    /** The composer's text. Held here so a rewrite can fill it. */
-    var draft by mutableStateOf("")
+    /**
+     * The composer's text, as a [TextFieldState].
+     *
+     * Not a plain String, and that is why pasting an image from the keyboard
+     * works: only the state-based text field tells the keyboard which content
+     * types it accepts. The string-based one does not, and the keyboard
+     * answers "this app does not support pasting images here".
+     */
+    val draftState = androidx.compose.foundation.text.input.TextFieldState()
+
+    /** The same text as a string, for the code that sets or reads it whole. */
+    var draft: String
+        get() = draftState.text.toString()
+        set(value) { draftState.setTextAndPlaceCursorAtEnd(value) }
 
     /** Files waiting to go with the next message. */
     var attachments by mutableStateOf<List<Attachment>>(emptyList())

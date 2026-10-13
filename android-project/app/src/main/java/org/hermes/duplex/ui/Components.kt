@@ -194,6 +194,44 @@ fun SwitchRow(
     }
 }
 
+/** An icon from the app's one set: single tone, tinted where it is used. */
+@Composable
+fun Ico(
+    @androidx.annotation.DrawableRes id: Int,
+    modifier: Modifier = Modifier,
+    tint: Color = Palette.textTertiary,
+    size: Dp = 20.dp,
+    description: String? = null,
+) {
+    androidx.compose.foundation.Image(
+        painter = androidx.compose.ui.res.painterResource(id),
+        contentDescription = description,
+        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(tint),
+        modifier = modifier.size(size),
+    )
+}
+
+/** An [Ico] that can be tapped, with a touch target big enough for a thumb. */
+@Composable
+fun IconTap(
+    @androidx.annotation.DrawableRes id: Int,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    tint: Color = Palette.textTertiary,
+    size: Dp = 20.dp,
+    target: Dp = 40.dp,
+) {
+    Box(
+        modifier
+            .size(target)
+            .clip(CircleShape)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) { Ico(id, tint = tint, size = size) }
+}
+
 /** A filled dot, as in the connection strip. */
 @Composable
 fun Dot(color: Color, size: Dp = 9.dp) {
@@ -286,15 +324,10 @@ fun ScreenScaffold(
                 .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                "‹",
-                color = Palette.textPrimary,
-                fontSize = 30.sp,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .clickable(onClick = onBack)
-                    .padding(horizontal = 16.dp, vertical = 2.dp)
-                    .semantics { contentDescription = "Back" },
+            IconTap(
+                org.hermes.duplex.R.drawable.ic_back, "Back", onBack,
+                modifier = Modifier.padding(horizontal = 4.dp),
+                tint = Palette.textPrimary, size = 24.dp, target = 48.dp,
             )
             Text(
                 title,
@@ -347,7 +380,7 @@ fun Dropdown(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            Text("▾", color = Palette.textTertiary)
+            Ico(org.hermes.duplex.R.drawable.ic_expand_more)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             items.forEachIndexed { index, label ->

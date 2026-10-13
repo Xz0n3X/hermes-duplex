@@ -350,14 +350,9 @@ class DuplexClient(
             val item = items.optJSONObject(index) ?: continue
             val label = item.optString("label")
             if (label.isEmpty()) continue
-            val marker = when (item.optString("kind")) {
-                "diagnose" -> "🔎"
-                "advance" -> "🛠"
-                "validate" -> "✓"
-                else -> ""
-            }
-            offers += listOf(marker, label).filter { it.isNotEmpty() }
-                .joinToString(" ") to item.optString("detail").ifEmpty { label }
+            // The label alone: the kind used to be an emoji prefix, and the
+            // app has one icon set and no emoji.
+            offers += label to item.optString("detail").ifEmpty { label }
         }
         suggestions = offers
         suggestionsDismissed = false

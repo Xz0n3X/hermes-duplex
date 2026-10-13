@@ -61,6 +61,7 @@ import org.json.JSONObject
 fun SidebarPanel(
     session: MainSession,
     onSettings: () -> Unit,
+    onFiles: () -> Unit,
     onClose: () -> Unit,
 ) {
     @Suppress("UNUSED_VARIABLE") val revision = session.sidebarRevision
@@ -80,17 +81,42 @@ fun SidebarPanel(
             .padding(top = 12.dp, start = 14.dp, end = 14.dp, bottom = 12.dp),
     ) {
         // The chevron is the only hint that the heading is also a control.
-        Text(
-            text = "${session.engineLabel().uppercase()}  ›",
-            color = Palette.textSecondary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp,
-            modifier = Modifier
+        Row(
+            Modifier
                 .clip(RoundedCornerShape(8.dp))
                 .clickable { onClose(); onSettings() }
                 .padding(vertical = 8.dp, horizontal = 4.dp),
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = session.engineLabel().uppercase(),
+                color = Palette.textSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+            )
+            Ico(R.drawable.ic_chevron_right, size = 16.dp)
+        }
+
+        // The way into Google Drive, USB drives and GitHub. It used to be a line
+        // in the overflow menu, which is where nobody looks for a file manager.
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Palette.accentMuted)
+                .clickable { onClose(); onFiles() }
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Ico(R.drawable.ic_folder, Modifier.padding(end = 12.dp), tint = Palette.accent, size = 22.dp)
+            Column(Modifier.weight(1f)) {
+                Text("Files", color = Palette.accent, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("Google Drive · USB · GitHub", color = Palette.textSecondary, fontSize = 11.sp)
+            }
+            Ico(R.drawable.ic_chevron_right, tint = Palette.accent, size = 22.dp)
+        }
 
         // Project selector. Holding it removes the project it is showing --
         // there is no room for a delete control beside every entry in a menu.
@@ -125,7 +151,7 @@ fun SidebarPanel(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                Text(stringResource(R.string.icon_chevron_down), color = Palette.textTertiary)
+                Ico(R.drawable.ic_expand_more)
             }
             DropdownMenu(expanded = projectMenu, onDismissRequest = { projectMenu = false }) {
                 if (cli.enabled) {
@@ -274,15 +300,9 @@ private fun ChatRow(
             }
         }
         if (onRename != null) {
-            Text(
-                "✎", color = Palette.textTertiary, fontSize = 15.sp,
-                modifier = Modifier.clickable(onClick = onRename).padding(8.dp),
-            )
+            IconTap(R.drawable.ic_edit, "Rename", onRename, size = 18.dp, target = 40.dp)
         }
-        Text(
-            "✕", color = Palette.textTertiary, fontSize = 13.sp,
-            modifier = Modifier.clickable(onClick = onDelete).padding(8.dp),
-        )
+        IconTap(R.drawable.ic_close, "Delete", onDelete, size = 18.dp, target = 40.dp)
     }
 }
 

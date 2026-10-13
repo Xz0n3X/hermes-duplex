@@ -78,13 +78,15 @@ fun VoiceStage(session: MainSession) {
                     color = Palette.textSecondary, fontSize = 12.sp,
                     modifier = Modifier.weight(1f),
                 )
-                Text(
-                    "✕  Hide",
-                    color = Palette.textSecondary, fontSize = 13.sp,
-                    modifier = Modifier
+                Row(
+                    Modifier
                         .clickable { session.showVoiceStage(false) }
                         .padding(8.dp),
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Ico(R.drawable.ic_close, tint = Palette.textSecondary, size = 16.dp)
+                    Text("Hide", color = Palette.textSecondary, fontSize = 13.sp, modifier = Modifier.padding(start = 6.dp))
+                }
             }
 
             OrbCanvas(

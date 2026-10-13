@@ -1050,18 +1050,18 @@ private fun Said(
             var openStep by remember(said, compact) { mutableStateOf(-1) }
             val stepCount = maxOf(said.detail, said.steps.size)
             if (!detailsOpen) {
-                Text(
-                    text = "▸  ${if (stepCount == 1) "1 command" else "$stepCount commands"}",
-                    style = MaterialTheme.typography.caption3,
+                DisclosureLabel(
+                    open = false,
+                    text = if (stepCount == 1) "1 command" else "$stepCount commands",
                     color = MaterialTheme.colors.secondary.copy(alpha = 0.7f),
                     modifier = Modifier.padding(top = 2.dp).clickable {
                         detailsOpen = true
                     },
                 )
             } else {
-                Text(
-                    text = "▾  ${if (stepCount == 1) "1 command" else "$stepCount commands"}",
-                    style = MaterialTheme.typography.caption3,
+                DisclosureLabel(
+                    open = true,
+                    text = if (stepCount == 1) "1 command" else "$stepCount commands",
                     color = MaterialTheme.colors.primary,
                     modifier = Modifier.padding(top = 2.dp).clickable {
                         detailsOpen = false
@@ -1091,11 +1091,10 @@ private fun Said(
                             }
                             .padding(horizontal = 8.dp, vertical = 6.dp),
                     ) {
-                        Text(
-                            text = "${if (expanded) "▾" else "▸"}  $caption",
-                            style = MaterialTheme.typography.caption3,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold,
+                        DisclosureLabel(
+                            open = expanded,
+                            text = caption,
+                            mono = true,
                             color = if (expanded) MaterialTheme.colors.primary
                             else MaterialTheme.colors.onBackground.copy(alpha = 0.7f),
                             maxLines = 2,
@@ -1299,10 +1298,10 @@ private fun ThreadScreen(model: WearState) {
                     }
                 },
                 label = {
-                    Text(
-                        text = "\u2193",
-                        style = MaterialTheme.typography.button,
-                        textAlign = TextAlign.Center,
+                    androidx.wear.compose.material.Icon(
+                        painter = androidx.compose.ui.res.painterResource(org.hermes.duplex.wear.R.drawable.ic_down),
+                        contentDescription = "Jump to the latest",
+                        modifier = Modifier.size(20.dp),
                     )
                 },
                 colors = ChipDefaults.secondaryChipColors(),
@@ -1493,5 +1492,42 @@ private fun SettingsScreen(
                     .padding(top = 6.dp),
             )
         }
+    }
+}
+
+/** A disclosure line: a chevron that says open or closed, and what it opens. */
+@Composable
+private fun DisclosureLabel(
+    open: Boolean,
+    text: String,
+    color: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+    mono: Boolean = false,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: androidx.compose.ui.text.style.TextOverflow = androidx.compose.ui.text.style.TextOverflow.Clip,
+) {
+    androidx.compose.foundation.layout.Row(
+        modifier = modifier,
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        androidx.wear.compose.material.Icon(
+            painter = androidx.compose.ui.res.painterResource(
+                if (open) org.hermes.duplex.wear.R.drawable.ic_expand_more
+                else org.hermes.duplex.wear.R.drawable.ic_chevron_right
+            ),
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(14.dp),
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.caption3,
+            fontFamily = if (mono) FontFamily.Monospace else null,
+            fontWeight = if (mono) FontWeight.Bold else null,
+            color = color,
+            maxLines = maxLines,
+            overflow = overflow,
+            modifier = Modifier.padding(start = 4.dp),
+        )
     }
 }

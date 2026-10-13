@@ -127,6 +127,11 @@ class FilesModel(private val activity: ComponentActivity) {
 
     fun connectLocation() = pickTree.launch(null)
 
+    /** Whether Google Drive's document provider is on this phone, i.e. will appear in the picker. */
+    val driveInstalled: Boolean = runCatching {
+        activity.packageManager.resolveContentProvider("com.google.android.apps.docs.storage", 0) != null
+    }.getOrDefault(false)
+
     fun disconnectLocation(location: FileRegistry.Location) {
         runCatching {
             activity.contentResolver.releasePersistableUriPermission(

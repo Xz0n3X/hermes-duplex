@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -115,21 +116,21 @@ private fun TurnRow(message: ConversationStore.Message, session: MainSession) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(end = 6.dp),
             )
-            Glyph("⧉", "Copy message") {
+            Glyph(R.drawable.ic_copy, "Copy message") {
                 session.copyMessage(message)
             }
             // Rewrite is yours to do; the agent's turn is not something to edit.
-            if (you) Glyph("✎", "Rewrite this message") { session.rewriteMessage(message) }
+            if (you) Glyph(R.drawable.ic_edit, "Rewrite this message") { session.rewriteMessage(message) }
             // Reading aloud is for the agent's words, not your own.
             if (!you) {
                 Glyph(
-                    if (speaking) "Ⅱ" else stringResource(R.string.icon_speak),
+                    if (speaking) R.drawable.ic_pause else R.drawable.ic_play,
                     stringResource(if (speaking) R.string.pause_message else R.string.read_message),
                 ) { session.speakMessage(message) }
             }
             // The lightbulb appears only where there is something behind it.
             if (message.suggestions.isNotEmpty()) {
-                Glyph("◎", "Bring back this reply's suggestions", Palette.accent) {
+                Glyph(R.drawable.ic_idea, "Bring back this reply's suggestions", Palette.accent) {
                     session.restoreSuggestions(message)
                 }
             }
@@ -189,21 +190,18 @@ private fun TurnRow(message: ConversationStore.Message, session: MainSession) {
 /** A small tappable symbol, with a spoken label. */
 @Composable
 private fun Glyph(
-    symbol: String,
+    @androidx.annotation.DrawableRes icon: Int,
     description: String,
     color: Color = Palette.textTertiary,
     onClick: () -> Unit,
 ) {
-    Text(
-        text = symbol,
-        color = color,
-        fontSize = 15.sp,
-        modifier = Modifier
+    Box(
+        Modifier
             .semantics { contentDescription = description }
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-    )
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+    ) { Ico(icon, tint = color, size = 16.dp) }
 }
 
 // -- the steps behind a CLI turn ------------------------------------------------------------
@@ -224,16 +222,18 @@ private fun DetailBlock(message: ConversationStore.Message, session: MainSession
         message.detail == 1 -> stringResource(R.string.cli_detail_one, message.detail)
         else -> stringResource(R.string.cli_detail_many, message.detail)
     }
-    Text(
-        text = "${if (open) "▾" else "▸"}  $label",
-        color = if (open) Palette.accent else Palette.textTertiary,
-        fontSize = 12.sp,
+    Row(
         modifier = Modifier
             .padding(top = 6.dp)
             .clip(RoundedCornerShape(8.dp))
             .clickable { session.toggleDetail(message) }
             .padding(vertical = 4.dp, horizontal = 2.dp),
-    )
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val tint = if (open) Palette.accent else Palette.textTertiary
+        Ico(if (open) R.drawable.ic_expand_more else R.drawable.ic_chevron_right, tint = tint, size = 16.dp)
+        Text(text = label, color = tint, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+    }
     if (!open) return
     Column(Modifier.fillMaxWidth()) {
         message.steps.forEachIndexed { index, step ->
@@ -258,22 +258,28 @@ private fun StepRow(step: ConversationStore.Step, onToggle: () -> Unit) {
     ) {
         // The tool names what happened; the subject says to what. Both on one
         // line, because the point of the closed list is to be skimmed.
-        Text(
-            text = buildString {
-                append(if (step.expanded) "▾  " else "▸  ")
-                append(step.tool)
-                if (step.subject.isNotEmpty()) append("  ").append(step.subject)
-            },
-            color = if (step.expanded) Palette.accent else Palette.textSecondary,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 11.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
+        Row(
+            Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onToggle)
                 .padding(horizontal = 10.dp, vertical = 8.dp),
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val tint = if (step.expanded) Palette.accent else Palette.textSecondary
+            Ico(if (step.expanded) R.drawable.ic_expand_more else R.drawable.ic_chevron_right, tint = tint, size = 14.dp)
+            Text(
+                text = buildString {
+                    append(step.tool)
+                    if (step.subject.isNotEmpty()) append("  ").append(step.subject)
+                },
+                color = tint,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 6.dp),
+            )
+        }
         if (step.expanded) {
             SelectionContainer {
                 Column(Modifier.padding(horizontal = 10.dp)) {
@@ -511,9 +517,9 @@ private fun IdeaRow(message: ConversationStore.Message, session: MainSession) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(end = 6.dp),
             )
-            Glyph("⧉", "Copy message") { session.copyMessage(message) }
+            Glyph(R.drawable.ic_copy, "Copy message") { session.copyMessage(message) }
             Glyph(
-                if (speaking) "Ⅱ" else stringResource(R.string.icon_speak),
+                if (speaking) R.drawable.ic_pause else R.drawable.ic_play,
                 stringResource(if (speaking) R.string.pause_message else R.string.read_message),
             ) { session.speakMessage(message) }
         }
@@ -576,7 +582,7 @@ private fun IdeaStepRow(step: IdeaStep, index: Int, last: Boolean, onSend: () ->
             .padding(top = 4.dp, bottom = if (last) 0.dp else 10.dp),
     ) {
         Column(Modifier.width(24.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("●", color = dot, fontSize = 14.sp)
+            Box(Modifier.padding(top = 4.dp).size(10.dp).background(dot, androidx.compose.foundation.shape.CircleShape))
             if (!last) {
                 Box(
                     Modifier

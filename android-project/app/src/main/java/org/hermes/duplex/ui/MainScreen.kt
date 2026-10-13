@@ -13,6 +13,8 @@ import androidx.compose.foundation.content.TransferableContent
 import androidx.compose.foundation.content.consume
 import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldDecorator
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -107,6 +109,7 @@ fun MainScreen(session: MainSession, onNavigate: (Destination) -> Unit) {
             SidebarPanel(
                 session = session,
                 onSettings = { onNavigate(Destination.SETTINGS) },
+                onFiles = { onNavigate(Destination.FILES) },
                 onClose = { scope.launch { drawer.close() } },
             )
         },
@@ -182,16 +185,7 @@ private fun TopBar(session: MainSession, onMenu: () -> Unit, onNavigate: (Destin
             modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
         )
         Box {
-            Text(
-                "⋮",
-                color = Palette.textPrimary,
-                fontSize = 22.sp,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .clickable { menu = true }
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
-                    .semantics { contentDescription = "More options" },
-            )
+            IconTap(R.drawable.ic_more, "More options", { menu = true }, tint = Palette.textPrimary, size = 24.dp, target = 48.dp)
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 @Composable fun item(label: String, action: () -> Unit) = DropdownMenuItem(
                     text = { Text(label) },
@@ -373,26 +367,14 @@ private fun SuggestionStrip(session: MainSession) {
                 )
             }
         }
-        Text(
-            "↻", color = Palette.textTertiary, fontSize = 18.sp,
-            modifier = Modifier
-                .clickable { session.refreshSuggestions() }
-                .padding(8.dp)
-                .semantics { contentDescription = "Refresh suggestions" },
-        )
-        Text(
-            "✕", color = Palette.textTertiary, fontSize = 14.sp,
-            modifier = Modifier
-                .clickable { session.dismissOffers() }
-                .padding(8.dp)
-                .semantics { contentDescription = "Set suggestions aside" },
-        )
+        IconTap(R.drawable.ic_refresh, "Refresh suggestions", { session.refreshSuggestions() })
+        IconTap(R.drawable.ic_close, "Set suggestions aside", { session.dismissOffers() })
     }
 }
 
 // -- composer ---------------------------------------------------------------------------------------------------
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun Composer(session: MainSession) {
     val keyboard = LocalSoftwareKeyboardController.current
@@ -444,14 +426,13 @@ private fun Composer(session: MainSession) {
                 .padding(start = 4.dp, end = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextField(
-                value = session.draft,
-                onValueChange = { session.draft = it },
-                placeholder = { Text(stringResource(R.string.composer_hint), color = Palette.textTertiary) },
+            BasicTextField(
+                state = session.draftState,
                 modifier = Modifier
                     .weight(1f)
-                    // An image sent by the keyboard (its "paste screenshot"
-                    // suggestion, or a drag-and-drop) becomes an attachment.
+                    // What the keyboard may hand over. Declaring this is what
+                    // makes its "paste image" and clipboard strip work: an image
+                    // it sends becomes an attachment instead of being refused.
                     .contentReceiver(object : ReceiveContentListener {
                         override fun onReceive(transferableContent: TransferableContent): TransferableContent? =
                             transferableContent.consume { item ->
@@ -459,21 +440,22 @@ private fun Composer(session: MainSession) {
                                 if (uri != null) session.attachFromKeyboard(uri)
                                 uri != null
                             }
-                    }),
-                maxLines = 5,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = Palette.textPrimary,
-                    unfocusedTextColor = Palette.textPrimary,
-                    cursorColor = Palette.accent,
-                ),
+                    })
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(color = Palette.textPrimary, fontSize = 16.sp),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(Palette.accent),
+                lineLimits = androidx.compose.foundation.text.input.TextFieldLineLimits.MultiLine(maxHeightInLines = 5),
+                decorator = TextFieldDecorator { inner ->
+                    Box {
+                        if (session.draftState.text.isEmpty()) {
+                            Text(stringResource(R.string.composer_hint), color = Palette.textTertiary, fontSize = 16.sp)
+                        }
+                        inner()
+                    }
+                },
             )
             if (session.busy) {
-                ToolText("■", "Stop", Palette.statusFailed) { session.stop() }
+                IconTap(R.drawable.ic_stop, "Stop", { session.stop() }, tint = Palette.statusFailed, size = 22.dp, target = 44.dp)
             }
             ToolText("Send", "Send", Palette.accent, bold = true) {
                 keyboard?.hide()
@@ -487,8 +469,8 @@ private fun Composer(session: MainSession) {
                 .padding(top = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ToolText("\uD83D\uDCCE", "Attach files", Palette.textSecondary) { session.pickAttachments() }
-            ToolText("\uD83D\uDCCB", "Paste from clipboard", Palette.textSecondary) { session.pasteFromClipboard() }
+            ToolIcon(R.drawable.ic_attach, "Attach files", false) { session.pickAttachments() }
+            ToolIcon(R.drawable.ic_paste, "Paste from clipboard", false) { session.pasteFromClipboard() }
             ToolIcon(R.drawable.ic_recall, stringResource(R.string.recall_next), session.recallArmed) {
                 session.toggleRecall()
             }
@@ -845,6 +827,6 @@ private fun AttachmentTile(file: Attachment, onRemove: () -> Unit) {
                 .clickable(onClick = onRemove)
                 .semantics { contentDescription = "Remove ${file.name}" },
             contentAlignment = Alignment.Center,
-        ) { Text("\u2715", color = Palette.bgApp, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+        ) { Ico(R.drawable.ic_close, tint = Palette.bgApp, size = 14.dp) }
     }
 }

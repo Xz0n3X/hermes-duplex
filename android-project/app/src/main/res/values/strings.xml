@@ -64,7 +64,7 @@
     <string name="endpoint_idle">waiting for you to speak</string>
     <string name="endpoint_hearing">HEARING YOU…</string>
     <string name="endpoint_held">HELD — still listening · %1$s</string>
-    <string name="endpoint_sent">SENT ✓ %1$s</string>
+    <string name="endpoint_sent">SENT · %1$s</string>
     <string name="endpoint_forced">SENT (gave up) · %1$s</string>
     <string name="endpoint_thinking">THINKING — sent, waiting for a reply</string>
     <string name="endpoint_speaking">SPEAKING — talk any time to interrupt</string>
@@ -98,14 +98,6 @@
     <string name="recalled_some">Recalled %1$d earlier turn</string>
     <string name="recalled_many">Recalled %1$d earlier turns</string>
     <string name="recalled_none">Nothing earlier matched</string>
-    <string name="icon_headset">\u2328</string>
-    <string name="icon_close">\u2715</string>
-    <string name="icon_plus">+</string>
-    <string name="icon_rename">\u270E</string>
-    <string name="icon_menu">\u2630</string>
-    <string name="icon_copy">\u29C9</string>
-    <string name="icon_bulb">\u25CE</string>
-    <string name="icon_speak">\u25B6</string>
     <string name="read_message">Read message aloud</string>
     <string name="pause_message">Pause reading</string>
     <string name="speaking_now">Reading it out…</string>
@@ -132,7 +124,6 @@
     <string name="delete_chat_note">It leaves the list. What was learned in it stays in this project\'s memory.</string>
 
     <!-- the Claude CLI session browser -->
-    <string name="icon_chevron_down">▾</string>
     <string name="cli_new_session">+  New %1$s session</string>
     <string name="cli_no_sessions">No conversations here yet.</string>
     <string name="cli_open">open</string>
@@ -196,8 +187,8 @@
     <string name="engine_hermes">Hermes</string>
     <string name="engine_hermes_note">Local. Fastest to first word.</string>
     <!-- What a followed CLI session is doing, in the status row. -->
-    <string name="working_line">\u273b %1$s \u00b7 %2$s</string>
-    <string name="working_done">\u2713 %1$s</string>
+    <string name="working_line">%1$s \u00b7 %2$s</string>
+    <string name="working_done">Done \u00b7 %1$s</string>
     <string name="working_default">Working</string>
     <string name="working_tokens">%1$d tokens</string>
     <!-- The remote machines screen. See RemotesActivity and remotes.py. -->

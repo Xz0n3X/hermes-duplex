@@ -121,7 +121,7 @@ class RemotesActivity : ComponentActivity() {
             "remote_test" -> {
                 val ok = event.optBoolean("ok")
                 val text = event.optString("text")
-                testResults[testing] = (if (ok) "✓ " else "✗ ") + text
+                testResults[testing] = (if (ok) "OK: " else "Failed: ") + text
                 alert = getString(if (ok) R.string.remote_reachable else R.string.remote_unreachable) to text
             }
         }
@@ -175,7 +175,7 @@ private fun RemotesScreen(
                 }
                 Line(item.optString("user") + "@" + item.optString("host") + if (port != 22) ":$port" else "", Palette.textSecondary)
                 val engines = item.optJSONObject("engines")
-                val offered = engines?.keys()?.asSequence()?.joinToString("   ") { "$it → " + engines.optString(it) }.orEmpty()
+                val offered = engines?.keys()?.asSequence()?.joinToString("   ") { "$it: " + engines.optString(it) }.orEmpty()
                 if (offered.isNotEmpty()) Line(offered, Palette.textTertiary)
                 Line(
                     when {

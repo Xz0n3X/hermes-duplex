@@ -64,7 +64,7 @@ fun FilesScreen(model: FilesModel, onBack: () -> Unit) {
             Modifier.fillMaxWidth().padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            listOf("This phone", "Drives", "GitHub").forEachIndexed { index, label ->
+            listOf("This phone", "Google Drive / USB", "GitHub").forEachIndexed { index, label ->
                 val on = model.tab == index
                 Text(
                     label,
@@ -134,10 +134,7 @@ private fun Browser(source: FileSource, model: FilesModel) {
     // Where you are, and the way back up.
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (stack.size > 1) {
-            Text(
-                "↑", color = Palette.accent, fontSize = 20.sp,
-                modifier = Modifier.clickable { stack = stack.dropLast(1) }.padding(end = 10.dp, top = 4.dp, bottom = 4.dp),
-            )
+            IconTap(org.hermes.duplex.R.drawable.ic_up, "Up one folder", { stack = stack.dropLast(1) }, tint = Palette.accent, size = 22.dp)
         }
         Text(
             stack.joinToString(" / ") { it.name },
@@ -177,7 +174,7 @@ private fun Browser(source: FileSource, model: FilesModel) {
                     },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(if (node.isDir) "📁" else "📄", fontSize = 20.sp, modifier = Modifier.padding(end = 12.dp))
+                Ico(if (node.isDir) org.hermes.duplex.R.drawable.ic_folder else org.hermes.duplex.R.drawable.ic_file, Modifier.padding(end = 12.dp), tint = if (node.isDir) Palette.accent else Palette.textTertiary, size = 22.dp)
                 Column(Modifier.weight(1f).padding(vertical = 10.dp)) {
                     Text(node.name, color = Palette.textPrimary, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     val detail = listOfNotNull(
@@ -187,10 +184,7 @@ private fun Browser(source: FileSource, model: FilesModel) {
                     if (detail.isNotEmpty()) Text(detail, color = Palette.textTertiary, fontSize = 11.sp)
                 }
                 Box2 {
-                    Text(
-                        "⋮", color = Palette.textSecondary, fontSize = 20.sp,
-                        modifier = Modifier.clickable { menuFor = node }.padding(horizontal = 12.dp, vertical = 6.dp),
-                    )
+                    IconTap(org.hermes.duplex.R.drawable.ic_more, "More", { menuFor = node }, tint = Palette.textSecondary, size = 22.dp)
                     DropdownMenu(expanded = menuFor == node, onDismissRequest = { menuFor = null }) {
                         DropdownMenuItem(text = { Text("Copy") }, onClick = {
                             model.clip = Clip(source, node); menuFor = null
@@ -362,7 +356,12 @@ private fun DrivesTab(model: FilesModel) {
             "so Hermes Duplex never sees your Google password or any token, only the folder you choose. " +
             "For Google Drive, pick it in the picker's side menu (the Drive app must be installed)."
     )
-    ActionButton("Connect a drive or folder", { model.connectLocation() }, Modifier.padding(vertical = 8.dp))
+    ActionButton("Connect Google Drive", { model.connectLocation() }, Modifier.padding(top = 8.dp))
+    Note(
+        if (model.driveInstalled) "In the picker that opens, tap the menu at the top left and choose Drive, then pick a folder."
+        else "The Google Drive app is not installed on this phone, so it will not appear in the picker. Install it, or connect a USB drive or other folder instead."
+    )
+    SoftButton("Connect a USB drive or other folder", { model.connectLocation() }, Modifier.padding(bottom = 8.dp))
     if (model.locations.isEmpty()) {
         Note("Nothing connected yet.")
         return
