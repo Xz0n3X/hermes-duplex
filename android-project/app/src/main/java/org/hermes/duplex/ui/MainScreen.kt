@@ -865,15 +865,24 @@ private fun RewriteHold(session: MainSession) {
                     ),
                     CircleShape,
                 )
+                // Held until the finger is actually lifted, wherever it has
+                // wandered. `detectTapGestures` cancels a press the moment the
+                // finger leaves the button's bounds, and a long dictation is
+                // exactly when a thumb drifts off a 64 dp circle -- so
+                // listening stopped while the button was still held.
                 .pointerInput(Unit) {
-                    detectTapGestures(onPress = {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
                         haptic.performHapticFeedback(
                             androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
                         )
                         session.startRewrite()
-                        tryAwaitRelease()
+                        do {
+                            val event = awaitPointerEvent()
+                            event.changes.forEach { it.consume() }
+                        } while (event.changes.any { it.pressed })
                         session.stopRewrite()
-                    })
+                    }
                 }
                 .semantics {
                     contentDescription = "Hold to dictate and rewrite with the local model"
