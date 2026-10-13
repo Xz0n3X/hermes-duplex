@@ -927,10 +927,22 @@ private fun CollapsedSuggestions(session: MainSession, modifier: Modifier) {
         Text(
             "$count",
             color = Palette.bgApp,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
-            // The bulb's glass is in the upper part of the icon, above the base.
-            modifier = Modifier.offset(y = (-3).dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            // Without the font's built-in padding and with the line trimmed to
+            // the glyphs, so the digit is centred on its own height rather than
+            // sitting low in a taller line box.
+            style = androidx.compose.ui.text.TextStyle(
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both,
+                ),
+            ),
+            // The glass of the bulb is the round upper part of the icon: its
+            // centre is about 9 of 24 down, against 12 for the icon's own centre.
+            modifier = Modifier.offset(y = (-3.75).dp),
         )
     }
 }

@@ -31,6 +31,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -235,13 +238,28 @@ private fun Glyph(
     color: Color = Palette.textTertiary,
     onClick: () -> Unit,
 ) {
+    // Lights up for a moment when pressed, so it is plain the press registered:
+    // the colour shifts to a lighter shade of itself (on a light theme, where
+    // lighter would vanish, a stronger one) and settles back.
+    var lit by remember { mutableStateOf(false) }
+    LaunchedEffect(lit) {
+        if (lit) {
+            kotlinx.coroutines.delay(1200)
+            lit = false
+        }
+    }
+    val shown = if (!lit) color else if (Palette.dark) {
+        androidx.compose.ui.graphics.lerp(color, Color.White, 0.6f)
+    } else {
+        androidx.compose.ui.graphics.lerp(color, Color.Black, 0.5f)
+    }
     Box(
         Modifier
             .semantics { contentDescription = description }
             .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
+            .clickable { lit = true; onClick() }
             .padding(horizontal = 8.dp, vertical = 6.dp),
-    ) { Ico(icon, tint = color, size = 16.dp) }
+    ) { Ico(icon, tint = shown, size = 16.dp) }
 }
 
 // -- the steps behind a CLI turn ------------------------------------------------------------

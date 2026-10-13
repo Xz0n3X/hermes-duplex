@@ -170,9 +170,13 @@ class DuplexClient(
             suggestionsDismissed = false
         }
 
+        /**
+         * Empty the strip. Deliberately leaves [suggestionsDismissed] alone:
+         * putting the suggestions away is the user's choice and holds until
+         * they undo it, not until the next message.
+         */
         fun clearSuggestions() {
             suggestions = emptyList()
-            suggestionsDismissed = false
         }
     }
 
@@ -355,7 +359,8 @@ class DuplexClient(
             offers += label to item.optString("detail").ifEmpty { label }
         }
         suggestions = offers
-        suggestionsDismissed = false
+        // Not reopened here. New suggestions arriving must not undo a strip the
+        // user collapsed; it stays a button until they press it.
         // Also kept with the reply itself, so its lightbulb can bring them
         // back once newer answers have pushed them out of the strip.
         val turn = event.optString("turn")

@@ -219,6 +219,8 @@ class MainSession(private val activity: ComponentActivity) {
             handler.post { speakingKey = if (speaking) key else null }
         }
         readAloud = prefs.getBoolean(DuplexClient.PREF_READ_ALOUD, false)
+        // The strip stays as the user left it, even after the app is closed.
+        DuplexClient.suggestionsDismissed = prefs.getBoolean(PREF_SUGGESTIONS_COLLAPSED, false)
         loadCachedUsage()
         refreshConversation(force = true)
         refreshOffers()
@@ -509,6 +511,10 @@ class MainSession(private val activity: ComponentActivity) {
                     suggestingTurn = ""
                     if ((event.optJSONArray("items")?.length() ?: 0) == 0) {
                         toast("No suggestions came back for that reply")
+                    } else {
+                        // Pressed a bulb to get them: that is an explicit ask,
+                        // so the strip opens to show them.
+                        setOffersCollapsed(false)
                     }
                 }
             }
@@ -1204,13 +1210,14 @@ class MainSession(private val activity: ComponentActivity) {
 
     // -- suggestions -------------------------------------------------------------------------------------------
 
-    fun dismissOffers() {
-        DuplexClient.suggestionsDismissed = true
-        refreshOffers()
-    }
+    /** Set the strip aside. Remembered, across messages and across launches. */
+    fun dismissOffers() = setOffersCollapsed(true)
 
-    fun restoreOffers() {
-        DuplexClient.suggestionsDismissed = false
+    fun restoreOffers() = setOffersCollapsed(false)
+
+    private fun setOffersCollapsed(collapsed: Boolean) {
+        DuplexClient.suggestionsDismissed = collapsed
+        prefs.edit().putBoolean(PREF_SUGGESTIONS_COLLAPSED, collapsed).apply()
         refreshOffers()
     }
 
@@ -1517,6 +1524,7 @@ class MainSession(private val activity: ComponentActivity) {
     companion object {
         /** Images up to this size are read whole, for the thumbnail. */
         private const val IMAGE_IN_MEMORY = 12L * 1024 * 1024
+        private const val PREF_SUGGESTIONS_COLLAPSED = "suggestions_collapsed"
         private const val PREF_USAGE_CACHE = "usage_cache"
         private const val PREF_USAGE_CACHE_AT = "usage_cache_at"
 
