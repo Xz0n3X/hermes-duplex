@@ -369,6 +369,25 @@ class DuplexClient(
      * outlive every activity. Handled on `hello` because that is the only
      * message that reports what the server booted with.
      */
+    /**
+     * Put the engine back after a reconnect.
+     *
+     * Which agent answers is held by the bridge *per connection*, and a new
+     * connection starts on Hermes. So when the bridge restarted, or the socket
+     * dropped and came back, this phone silently went from following a Claude
+     * or Codex session to talking to Hermes, and the CLI's messages stopped
+     * appearing. The choice made in Settings is remembered here and asked for
+     * again on every `hello`, exactly as the voice is.
+     */
+    private fun applySavedEngine(hello: JSONObject) {
+        val want = context
+            .getSharedPreferences("hermes-duplex", Context.MODE_PRIVATE)
+            .getString("engine", null)
+            ?.takeIf { it.isNotBlank() }
+            ?: return
+        if (want != hello.optString("engine", "hermes")) setTuning("engine" to want)
+    }
+
     private fun applySavedVoice(hello: JSONObject) {
         val want = context
             .getSharedPreferences("hermes-duplex", Context.MODE_PRIVATE)
@@ -600,7 +619,10 @@ class DuplexClient(
                 // event *kind* and not the event, and this is the only field
                 // that decides whether a followed agent is working.
                 if (kind == "working") lastWorking = event.optBoolean("active")
-                if (kind == "hello") applySavedVoice(event)
+                if (kind == "hello") {
+                    applySavedVoice(event)
+                    applySavedEngine(event)
+                }
                 // A new question makes the previous answer's offers stale, so
                 // they go the moment one is accepted rather than lingering
                 // under the reply they no longer follow.

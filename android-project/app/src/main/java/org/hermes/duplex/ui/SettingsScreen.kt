@@ -165,6 +165,13 @@ class SettingsModel(private val activity: ComponentActivity) {
         return profiles.indexOfFirst { it.name == selected }.let { if (it < 0) 0 else it + 1 }
     }
 
+    /** Remembered, so a reconnect puts it back -- see DuplexClient.applySavedEngine. */
+    fun chooseEngine(id: String) {
+        engine = id
+        prefs.edit().putString("engine", id).apply()
+        tune("engine" to id)
+    }
+
     fun chooseVoice(index: Int) {
         voiceIndex = index
         voiceNames.getOrNull(index)?.let {
@@ -301,8 +308,7 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
                     .clickable(enabled = choice.installed) {
-                        model.engine = choice.id
-                        model.tune("engine" to choice.id)
+                        model.chooseEngine(choice.id)
                     }
                     .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,

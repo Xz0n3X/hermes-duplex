@@ -10,6 +10,7 @@ import android.widget.Toast
 import android.widget.VideoView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -101,10 +102,22 @@ private fun TurnRow(message: ConversationStore.Message, session: MainSession) {
     val speaking = session.speakingKey == message.speechKey
     val width = LocalConfiguration.current.screenWidthDp.dp
 
+    val card = RoundedCornerShape(16.dp)
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 8.dp)
+            // The agent's reply sits in a card -- a long answer reads as one
+            // block with edges, instead of text running into the thread. Your
+            // own words stay a bubble on the right.
+            .let { base ->
+                if (you) base
+                else base
+                    .clip(card)
+                    .background(Palette.bgRaised)
+                    .border(androidx.compose.foundation.BorderStroke(1.dp, Palette.borderDefault), card)
+                    .padding(14.dp)
+            },
         horizontalAlignment = if (you) Alignment.End else Alignment.Start,
     ) {
         // Role label and the row's actions share a line.
@@ -271,7 +284,7 @@ private fun StepRow(step: ConversationStore.Step, onToggle: () -> Unit) {
             .fillMaxWidth()
             .padding(top = 4.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(Palette.bgRaised)
+            .background(Palette.bgApp)
     ) {
         // The tool names what happened; the subject says to what. Both on one
         // line, because the point of the closed list is to be skimmed.
