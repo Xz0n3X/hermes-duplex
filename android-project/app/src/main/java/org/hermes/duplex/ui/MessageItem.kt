@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -54,7 +55,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.hermes.duplex.ConversationStore
+import org.hermes.duplex.DuplexClient
 import org.hermes.duplex.ConversationStore.Role
 import org.hermes.duplex.R
 import org.hermes.duplex.ui.theme.Palette
@@ -142,19 +145,33 @@ private fun TurnRow(message: ConversationStore.Message, session: MainSession) {
         // model emits it anyway, and `*3 Body Problem*` showing its asterisks
         // is what an instruction-as-rendering-strategy looks like.
         if (you) {
-            Box(
-                Modifier
-                    .widthIn(max = width * 0.78f)
-                    .padding(top = 4.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Palette.userBubble)
-                    .padding(horizontal = 14.dp, vertical = 10.dp)
-            ) {
-                MarkdownText(
-                    text = message.text,
-                    italic = true,
-                    fillWidth = false,
-                )
+            // Files sent with the message are shown as what they are -- an
+            // image as its picture -- rather than as the paths the agent was
+            // given. The text the agent receives is unchanged.
+            val parsed = remember(message.text) { parseAttachments(message.text) }
+            if (parsed.body.isNotEmpty()) {
+                Box(
+                    Modifier
+                        .widthIn(max = width * 0.78f)
+                        .padding(top = 4.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Palette.userBubble)
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    MarkdownText(
+                        text = parsed.body,
+                        italic = true,
+                        fillWidth = false,
+                    )
+                }
+            }
+            if (parsed.paths.isNotEmpty()) {
+                Row(
+                    Modifier.padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    parsed.paths.forEach { path -> SentAttachment(path) }
+                }
             }
         } else {
             MarkdownText(
@@ -616,5 +633,86 @@ private fun IdeaStepRow(step: IdeaStep, index: Int, last: Boolean, onSend: () ->
                     .padding(horizontal = 10.dp, vertical = 6.dp),
             )
         }
+    }
+}
+
+
+// -- files sent with a message -----------------------------------------------------------------
+
+private data class SentFiles(val body: String, val paths: List<String>)
+
+/** The block [MainSession] appends when files go with a message. */
+private val ATTACHED = Regex(
+    "\\n\\nAttached files? \\(saved on this machine; read them from these paths\\):((?:\\n- .+)+)\\s*$"
+)
+
+private fun parseAttachments(text: String): SentFiles {
+    val found = ATTACHED.find(text) ?: return SentFiles(text, emptyList())
+    val paths = found.groupValues[1].lines().map { it.removePrefix("- ").trim() }.filter { it.isNotEmpty() }
+    val body = text.substring(0, found.range.first).trim()
+    // The placeholder the app writes when you send a file with no words.
+    return SentFiles(if (body.startsWith("(see the attached")) "" else body, paths)
+}
+
+private fun bridgeFileUrl(path: String): String {
+    val base = DuplexClient.lastUrl
+        .replaceFirst("ws://", "http://").replaceFirst("wss://", "https://").removeSuffix("/ws")
+    return base.toHttpUrl().newBuilder()
+        .addPathSegments("uploads/file").addQueryParameter("path", path).build().toString()
+}
+
+private val IMAGE_PATH = Regex(".*\\.(png|jpe?g|gif|webp|bmp)$", RegexOption.IGNORE_CASE)
+
+/** One sent file: its picture if it is an image, otherwise its name. */
+@Composable
+private fun SentAttachment(path: String) {
+    val context = LocalContext.current
+    val name = path.substringAfterLast('/')
+    if (!path.matches(IMAGE_PATH)) {
+        Row(
+            Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(Palette.userBubble)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Ico(R.drawable.ic_file, tint = Palette.textSecondary, size = 18.dp)
+            Text(name, color = Palette.textPrimary, fontSize = 12.sp, maxLines = 1,
+                overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 8.dp).widthIn(max = 200.dp))
+        }
+        return
+    }
+    val bitmap by produceState<android.graphics.Bitmap?>(null, path) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val bytes = (URL(bridgeFileUrl(path)).openConnection() as HttpURLConnection).run {
+                    connectTimeout = 8000; readTimeout = 15000
+                    inputStream.use { it.readBytes() }
+                }
+                // Decoded at thumbnail size: a full-resolution screenshot is
+                // several times the memory of what is drawn.
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+                var sample = 1
+                while (bounds.outWidth / (sample * 2) >= 480 && bounds.outHeight / (sample * 2) >= 480) sample *= 2
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
+            }.getOrNull()
+        }
+    }
+    Box(
+        Modifier
+            .size(width = 160.dp, height = 160.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Palette.bgRaised)
+            .semantics { contentDescription = "Attached image $name" }
+            .clickable { openUrl(context, bridgeFileUrl(path)) },
+        contentAlignment = Alignment.Center,
+    ) {
+        bitmap?.let {
+            Image(
+                bitmap = it.asImageBitmap(), contentDescription = null,
+                contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize(),
+            )
+        } ?: Ico(R.drawable.ic_file, tint = Palette.textTertiary, size = 28.dp)
     }
 }

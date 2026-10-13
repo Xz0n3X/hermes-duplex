@@ -805,8 +805,9 @@ class MainSession(private val activity: ComponentActivity) {
             // Images are read whole: the thumbnail wants the bytes anyway, and a
             // screenshot is small. Everything else is streamed, so a large file
             // never has to fit in memory.
-            val isImage = mime.startsWith("image/") && size in 0..IMAGE_IN_MEMORY
-            val bytes = if (isImage) activity.contentResolver.openInputStream(uri)?.use { it.readBytes() } else null
+            // Unknown size (-1) still gets a thumbnail attempt: read is capped below.
+            val isImage = mime.startsWith("image/") && size <= IMAGE_IN_MEMORY
+            val bytes = if (isImage) activity.contentResolver.openInputStream(uri)?.use { readUpTo(it, IMAGE_IN_MEMORY.toInt()) } else null
             val thumb = bytes?.let { thumbnailOf(it) }
             // On screen straight away, before the upload has finished.
             if (thumb != null) finishUpload(id) { it.copy(thumbnail = thumb) }
@@ -880,6 +881,8 @@ class MainSession(private val activity: ComponentActivity) {
     }
 
     private fun sizeOf(uri: android.net.Uri): Long = runCatching {
+        // A file we copied ourselves has no content provider to ask.
+        if (uri.scheme == "file") return@runCatching java.io.File(uri.path ?: "").length()
         activity.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
             ?.use { if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else -1L }
     }.getOrNull() ?: -1L
