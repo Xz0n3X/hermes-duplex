@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hermes Duplex</string>
+    <string name="server_hint">ws://host:8770/ws</string>
+    <!-- The phone and bridge are currently on the same LAN. -->
+    <string name="default_server_url">ws://192.168.1.48:8770/ws</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="debug">Debug</string>
+    <string name="usage">Usage</string>
+    <string name="idle">idle</string>
+    <string name="you_said">You: %1$s</string>
+    <string name="recalibrate">Recalibrate</string>
+    <string name="barge_enabled">Allow barge-in</string>
+
+    <string name="level_idle">level    —    threshold    —</string>
+    <string name="level_value">level %1$.0f   threshold %2$.0f   %3$s</string>
+    <string name="floor_label">Mic threshold (raise if noise triggers it)</string>
+    <string name="floor_value">Mic threshold: %1$d</string>
+    <string name="barge_label">Barge-in strictness</string>
+    <string name="barge_value">Barge-in strictness: %1$.1fx</string>
+    <string name="silence_label">End-of-turn silence</string>
+    <string name="silence_value">End-of-turn silence: %1$d ms</string>
+
+    <string name="voice_label">Voice — installed and ready</string>
+    <string name="readback_voice_label">Phone read-back voice</string>
+    <string name="readback_preview">Preview read-back voice</string>
+    <string name="preview">Preview</string>
+    <string name="more">More…</string>
+
+    <string name="copy_all">Copy all</string>
+    <string name="refresh">Refresh</string>
+    <string name="clear">Clear</string>
+    <string name="cmd_reset">New</string>
+    <string name="cmd_stop">Stop</string>
+    <string name="cmd_recal">Recal</string>
+    <string name="cmd_stats">Stats</string>
+    <string name="prompt_hint">Type a prompt (no mic)</string>
+    <string name="send">Send</string>
+    <string name="rewrite_hold">Hold to rewrite with local LLM</string>
+    <string name="rewrite_release">Release to rewrite</string>
+
+    <string name="hint">Ask the agent to do something.\n\nTap the headset for hands-free voice — the mic stays open, so you can interrupt any time.</string>
+    <string name="tuning_note">If ambient noise keeps triggering the mic, watch the level meter and raise the mic threshold just above where the room sits.</string>
+    <string name="server_note">The bridge, not Hermes itself. install.sh bakes this machine\'s address in; change it only if the bridge moved.</string>
+    <string name="more_voices">More voices</string>
+    <string name="loading">Loading…</string>
+    <string name="filter_hint">Filter by name or language (en_GB, en_AU…)</string>
+    <string name="tap_to_download">Tap a voice to download it (60–115 MB). It then appears in the main list.</string>
+    <string name="available_count">%1$d voices available to download</string>
+    <string name="downloading">Downloading %1$s…</string>
+    <string name="download_failed">Download failed: %1$s</string>
+    <string name="load_failed">Could not load catalogue: %1$s</string>
+    <string name="installed">Installed %1$s</string>
+    <string name="timing">Timing</string>
+    <string name="no_turns_yet">No turns yet — ask something, then come back.</string>
+    <string name="timing_headline">%1$d turns · average wait %2$.1fs · best %3$.1fs</string>
+    <string name="timing_key">model = the wait · tts = making audio · speak = audio playing (not a stall) · recall = memory lookup</string>
+    <string name="switches_label">What each turn is allowed to do</string>
+    <string name="sw_memory">Recall memory each turn (slower; off = only when you ask)</string>
+    <string name="sw_history">Keep conversation history</string>
+    <string name="sw_web">Allow web search</string>
+    <string name="partial">…%1$s</string>
+    <string name="endpoint_idle">waiting for you to speak</string>
+    <string name="endpoint_hearing">HEARING YOU…</string>
+    <string name="endpoint_held">HELD — still listening · %1$s</string>
+    <string name="endpoint_sent">SENT ✓ %1$s</string>
+    <string name="endpoint_forced">SENT (gave up) · %1$s</string>
+    <string name="endpoint_thinking">THINKING — sent, waiting for a reply</string>
+    <string name="endpoint_speaking">SPEAKING — talk any time to interrupt</string>
+
+    <!-- conversation screen -->
+    <string name="settings">Settings</string>
+    <string name="action_new">New conversation</string>
+    <string name="action_disconnect">Stop listening &amp; disconnect</string>
+    <string name="notification_stop">Stop</string>
+    <string name="disconnected">Stopped. Send anything to reconnect.</string>
+    <string name="section_connection">Bridge</string>
+    <string name="section_mic">Microphone and turn-taking</string>
+    <string name="speaker_you">You</string>
+    <string name="speaker_agent">Agent</string>
+    <string name="msg_interrupted">interrupted</string>
+    <string name="meta_both">%1$s \u00b7 %2$s</string>
+    <string name="conversation_cleared">New conversation</string>
+    <string name="not_connected">not connected</string>
+    <string name="status_offline">offline</string>
+
+    <!-- composer -->
+    <string name="composer_hint">Ask the agent to do something…</string>
+    <string name="composer_tip">Headset for hands-free</string>
+    <string name="recall_next">Recall earlier turns for the next message</string>
+    <string name="wake_toggle">Listen for the wake word</string>
+    <string name="wake_on">Listening for \u201csilver\u201d</string>
+    <string name="wake_off">No longer listening for the wake word</string>
+    <string name="wake_ready">Yes?</string>
+    <string name="status_wake">listening for \u201csilver\u201d</string>
+    <string name="recall_armed">Recall armed — the next message searches earlier turns</string>
+    <string name="recalled_some">Recalled %1$d earlier turn</string>
+    <string name="recalled_many">Recalled %1$d earlier turns</string>
+    <string name="recalled_none">Nothing earlier matched</string>
+    <string name="icon_headset">\u2328</string>
+    <string name="icon_close">\u2715</string>
+    <string name="icon_plus">+</string>
+    <string name="icon_rename">\u270E</string>
+    <string name="icon_menu">\u2630</string>
+    <string name="icon_copy">\u29C9</string>
+    <string name="icon_bulb">\u25CE</string>
+    <string name="icon_speak">\u25B6</string>
+    <string name="read_message">Read message aloud</string>
+    <string name="pause_message">Pause reading</string>
+    <string name="speaking_now">Reading it out…</string>
+
+    <!-- per-message actions -->
+    <string name="copied">Copied</string>
+    <string name="rewrite_title">Rewrite and resend</string>
+    <string name="send_again">Send</string>
+    <string name="restored_suggestions">%1$d suggestion restored</string>
+    <string name="restored_suggestions_plural">%1$d suggestions restored</string>
+
+    <!-- sidebar -->
+    <string name="sidebar">Projects and chats</string>
+    <string name="sidebar_project">PROJECT</string>
+    <string name="sidebar_new_chat">+  New chat</string>
+    <string name="sidebar_no_chats">No chats yet.</string>
+    <string name="new_project_title">New project</string>
+    <string name="new_project_hint">Project name</string>
+    <string name="new_project_note">A project has its own memory. Nothing is shared with the others.</string>
+    <string name="rename_chat_title">Rename chat</string>
+    <string name="delete_chat_title">Delete \u201c%1$s\u201d?</string>
+    <string name="delete_project_title">Remove project \u201c%1$s\u201d?</string>
+    <string name="delete_project_note">Its %1$d chat(s) and everything the agent learned in them go with it. Moved to a bin on the bridge, not erased \u2014 recoverable from projects/.trash if this was a mistake.</string>
+    <string name="delete_chat_note">It leaves the list. What was learned in it stays in this project\'s memory.</string>
+
+    <!-- the Claude CLI session browser -->
+    <string name="icon_chevron_down">▾</string>
+    <string name="cli_new_session">+  New %1$s session</string>
+    <string name="cli_no_sessions">No conversations here yet.</string>
+    <string name="cli_open">open</string>
+    <string name="cli_detail_one">%1$d step</string>
+    <string name="cli_detail_many">%1$d steps</string>
+    <string name="cli_detail_thinking">Reasoning isn\'t kept in the transcript — the CLI records that it happened, not what it said.</string>
+    <string name="cli_loading">Reading…</string>
+    <string name="cli_step_silent">(no output)</string>
+    <string name="auto_read_on">Reading replies aloud</string>
+    <string name="auto_read_off">No longer reading replies aloud</string>
+    <string name="auto_read">Read replies aloud as they arrive</string>
+
+    <!-- approving what the agent wants to do -->
+    <string name="approve_title">%1$s wants to run</string>
+    <string name="approve_in">in %1$s</string>
+    <string name="approve_allow">Allow once</string>
+    <string name="approve_always">Allow this run</string>
+    <string name="approve_deny">Deny</string>
+    <string name="approve_allowed">Allowed</string>
+    <string name="approve_denied">Denied</string>
+    <string name="approve_note">Nobody answering means no: the agent is waiting, and an unanswered question is refused after three minutes.</string>
+    <string name="create">Create</string>
+    <string name="rename">Rename</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- connection strip -->
+    <string name="status_connecting">connecting…</string>
+    <string name="status_no_mic">microphone permission needed</string>
+    <string name="status_ready">ready</string>
+    <string name="status_hearing">hearing you</string>
+    <string name="status_listening_more">still listening…</string>
+    <string name="status_thinking">thinking</string>
+    <string name="status_replying">replying (%1$d ms)</string>
+    <string name="status_done">done in %1$d ms</string>
+    <string name="status_error">error: %1$s</string>
+
+    <!-- voice mode -->
+    <string name="voice_mode">Voice mode</string>
+    <string name="voice_starting">Starting…</string>
+    <string name="voice_listening">Listening…</string>
+    <string name="voice_thinking">Thinking…</string>
+    <string name="voice_speaking">Speaking…</string>
+    <string name="voice_muted">Muted</string>
+    <string name="voice_held">Waiting for the rest…</string>
+    <string name="voice_held_why">That did not sound finished · %1$s</string>
+    <string name="voice_error">Bridge error</string>
+    <string name="voice_hint">Tap to interrupt · long-press to mute</string>
+    <string name="voice_hint_muted">Long-press to unmute</string>
+    <string name="voice_end">End voice</string>
+    <string name="voice_collapsed">Voice is live — tap the headset to show it</string>
+    <string name="voice_ended">Voice session ended</string>
+    <string name="composer_tip_live">Tap headset to show · hold to end</string>
+
+    <!-- suggestions -->
+    <string name="suggestions_restore">%1$d suggestion</string>
+    <string name="suggestions_restore_plural">%1$d suggestions</string>
+    <string name="sw_engine">WHO ANSWERS</string>
+    <string name="sw_engine_note">Applies to the watch too — both are windows onto one bridge session. When following a terminal session, Codex runs in its sandbox, live-syncs here, and asks here before commands or file changes that need approval. Its past sessions appear in the sidebar.</string>
+    <string name="sw_engine_missing">Greyed-out engines are not installed on the bridge machine. Everything else applies to the watch too.</string>
+    <string name="engine_hermes">Hermes</string>
+    <string name="engine_hermes_note">Local. Fastest to first word.</string>
+    <!-- What a followed CLI session is doing, in the status row. -->
+    <string name="working_line">\u273b %1$s \u00b7 %2$s</string>
+    <string name="working_done">\u2713 %1$s</string>
+    <string name="working_default">Working</string>
+    <string name="working_tokens">%1$d tokens</string>
+    <!-- The remote machines screen. See RemotesActivity and remotes.py. -->
+    <string name="remotes">Remote machines</string>
+    <string name="remotes_title">Remote machines</string>
+    <string name="remotes_note">Other computers this bridge can reach over SSH. Each one appears in WHO ANSWERS as its own engine, and its sessions appear in the sidebar exactly like the ones on this Mac.</string>
+    <string name="remotes_readonly">This bridge was started without a remotes file, so the list cannot be edited here.</string>
+    <string name="remotes_empty">No machines yet.</string>
+    <string name="remote_add">Add a machine</string>
+    <string name="remote_edit">Edit</string>
+    <string name="remote_edit_title">Edit machine</string>
+    <string name="remote_test">Test</string>
+    <string name="remote_testing">Testing…</string>
+    <string name="remote_delete">Remove</string>
+    <string name="remote_delete_title">Remove %1$s?</string>
+    <string name="remote_delete_body">The bridge stops offering its engines and forgets its password. Nothing on the machine itself is touched.</string>
+    <string name="remote_save">Save</string>
+    <string name="remote_enabled">Offer this machine’s engines</string>
+    <string name="remote_has_password">Password set</string>
+    <string name="remote_no_credential">No password or key yet</string>
+    <string name="remote_uses_key">Key: %1$s</string>
+    <string name="remote_sandbox_is">Codex sandbox: %1$s</string>
+    <string name="remote_sandbox_note">What Codex may do over there. Read-only is the default for a machine you are not sitting at.</string>
+    <string name="remote_field_label">Name</string>
+    <string name="remote_field_host">Host or tailnet address</string>
+    <string name="remote_field_user">Login</string>
+    <string name="remote_field_port">Port</string>
+    <string name="remote_field_password">Password</string>
+    <string name="remote_field_identity">SSH key file on the bridge (optional)</string>
+    <string name="remote_field_agents">Which CLIs it runs</string>
+    <string name="remote_field_sandbox">Codex sandbox</string>
+    <string name="remote_field_paths">Where the CLIs are (optional)</string>
+    <string name="remote_field_claude_path">claude</string>
+    <string name="remote_field_codex_path">codex</string>
+    <string name="remote_password_kept">Leave blank to keep the password already saved.</string>
+    <string name="remote_password_new">Stored on the bridge, in a file only it can read. It is never sent back to this phone.</string>
+    <string name="remote_paths_note">Only needed when the CLI is not on the login PATH over there. The bridge finds it itself otherwise.</string>
+    <string name="remote_not_saved">Not saved</string>
+    <string name="remote_reachable">Reachable</string>
+    <string name="remote_unreachable">Could not connect</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The watch reaches the bridge two ways: through the phone, or straight over
+  the network on an address the wearer types into settings. That address is
+  plain ws:// and it is not knowable here — a tailnet address today, a LAN
+  address on a different subnet tomorrow — so unlike the phone, which pins
+  its one Tailscale host, this app cannot enumerate the hosts it may talk to.
+
+  Cleartext is therefore permitted outright. The bridge speaks no TLS, and
+  the boundary is the network the watch is on: a tailnet, or the wearer's
+  own Wi-Fi. Nothing here should be reachable from the open internet.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

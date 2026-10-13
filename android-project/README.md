@@ -1,22 +1,43 @@
-# Hermes Duplex Android App (org.hermes.duplex)
+# Hermes Duplex — Android (phone + watch)
 
-Modernized, low-latency duplex voice and chat client for the Hermes Mac bridge server.
+Full-duplex voice and chat client for the Hermes bridge. Phone UI is Jetpack
+Compose (dark-first design); the engine underneath is the real client.
 
-- **Package:** `org.hermes.duplex`
-- **Version:** `v0.79-poc`
-- **Language:** Kotlin
-- **Minimum SDK:** API 26 (Android 8.0)
-- **Target SDK:** API 34 (Android 14)
-- **UI Framework:** Jetpack Compose (Material 3)
+| module | what |
+|---|---|
+| `:core` | UI-free logic shared by phone and watch: conversation store, sidebar, approvals, orb maths, speaker, timing, event log |
+| `:app` | Phone app. `DuplexClient` / `DuplexService` (socket, mic, speaker), Compose screens in `ui/` |
+| `:wear` | Wear OS companion (same applicationId and signing key as the phone) |
 
-## Key Systems Architecture
-1. **Zero-Allocation Audio Loop:** `CircularAudioRingBuffer.kt` eliminates garbage collection pauses during 24kHz 20ms audio frame streaming.
-2. **Fail-Closed Security Model:** `FailClosedSecurityManager.kt` guarantees immediate hardware microphone release and socket teardown on any authentication or connection failure.
-3. **Android 14 Foreground Service:** Declares and uses `FOREGROUND_SERVICE_MICROPHONE` with persistent notification channel and wake lock lifecycle.
-4. **Duplex WebSocket Protocol:** Compliant with `docs/PROTOCOL.md` (JSON envelopes, Opus 24kHz / PCM 16-bit, barge-in interruption).
+## Wire protocol
 
-## Build Instructions
-\`\`\`bash
-./gradlew assembleDebug
+The bridge speaks a plain WebSocket, default `ws://<host>:8770/ws`:
+
+- **up (binary):** 16 kHz mono s16le PCM, 20 ms frames (640 bytes)
+- **down (binary):** PCM reply audio at the same format
+- **text, both ways:** JSON objects with a `type`. Events from the bridge include
+  `hello`, `state`, `transcript`, `reply_delta`, `reply`, `projects`, `chat_opened`,
+  `chat_delta`, `approval_request`, `usage`, `trajectory`, `suggestions`. Commands
+  include `prompt`, `stop`, `config`, `open_chat`, `approval_reply`, `usage`.
+- There is no token header; the bridge is reached over LAN/Tailscale only.
+
+The authoritative definition is `server/duplex_server.py` in the main project;
+`DuplexClient.kt` is its client.
+
+## Screens (all Compose)
+
+Chat (markdown, links, streaming, copy / rewrite / read-aloud, CLI step
+disclosure, media, private idea cards), voice stage (orb, mute, interrupt,
+scrubbable caption), sidebar (engine, projects, chats / CLI sessions, usage),
+approvals, suggestions, Settings (voices, switches, engine, mic tuning),
+Remote machines, Usage, Timing, Debug, Voice browser.
+
+## Build
+
+```bash
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+./gradlew :app:assembleDebug :wear:assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-\`\`\`
+```
+
+Needs `local.properties` with `sdk.dir=` (not committed).

@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -13,16 +13,16 @@ android {
         targetSdk = 34
         versionCode = 79
         versionName = "0.79-poc"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildFeatures {
-        compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.10"
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            // Proof of concept: sign with the debug key so the APK installs
+            // by sideload without a keystore ceremony. The watch app must be
+            // signed with the same key or the Data Layer will not pair them.
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
 
     compileOptions {
@@ -33,17 +33,38 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+
+    composeOptions {
+        // Pinned to Kotlin 1.9.24. See the version catalog.
+        kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
+    }
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("androidx.activity:activity-compose:1.8.2")
-    implementation(platform("androidx.compose:compose-bom:2024.02.00"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation(project(":core"))
+
+    implementation(libs.core.ktx)
+    implementation(libs.coroutines.android)
+    implementation(libs.okhttp)
+
+    // Material Components is kept for the window theme only: it is what
+    // paints the status bar and the first frame before Compose is up.
+    implementation(libs.material)
+
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.activity.compose)
+    implementation(libs.fragment)
+    implementation(libs.lifecycle.runtime.compose)
+
+    // The watch link. Nothing else in the phone app needs Play services.
+    implementation(libs.play.services.wearable)
 }

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- This APK is only for watches: the Play Store uses it to decide what
+         to offer where, and it keeps the phone build from installing here. -->
+    <uses-feature
+        android:name="android.hardware.type.watch"
+        android:required="true" />
+
+    <!-- Speaking and listening happen on the watch; the phone only ever sees
+         text. RECORD_AUDIO is for the on-device recogniser. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- A reply or an approval buzzes the wrist; see Alerts. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- The connection outlives the screen. An Activity on Wear is destroyed
+         readily (swipe it away, or let the system reclaim it) and it used to
+         take the socket, the alerts and the voice with it, so an answer that
+         arrived a minute later was received by nobody. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- dataSync rather than connectedDevice. The latter additionally
+         demands one of the Bluetooth or network-changing permissions, none
+         of which this needs or should hold just to satisfy a check; what the
+         service actually does is keep a websocket open, which is what
+         dataSync describes. -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- A question that is still waiting when the screen next wakes. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.DeviceDefault">
+
+        <uses-library
+            android:name="com.google.android.wearable"
+            android:required="false" />
+
+        <!-- Standalone. It was not, and that was true when the only route was
+             through the phone's Data Layer. On Wi-Fi direct the watch holds
+             its own socket to the bridge and needs nothing on the phone at
+             all, so it can be used with the phone in another room. That is
+             most of the point of putting it on a wrist. -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
+
+        <!-- Fully qualified on purpose. A leading dot resolves against the
+             applicationId, which is the phone's package so the Data Layer
+             will pair; the class is in this module's own namespace. The two
+             differ here, and the shorthand quietly names a class that does
+             not exist. -->
+        <activity
+            android:name="org.hermes.duplex.wear.WearActivity"
+            android:exported="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.DeviceDefault">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Holds the connection. See WearBridgeService: its whole job is to
+             exist, so the process is not reclaimed between a question being
+             asked and its answer arriving. -->
+        <service
+            android:name="org.hermes.duplex.wear.WearBridgeService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+    </application>
+</manifest>

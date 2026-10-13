@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only what the window itself needs before Compose draws. The app's real
+     palette lives in ui/theme/Theme.kt. -->
+<resources>
+    <color name="window_background">#030712</color>
+    <color name="accent">#5891FF</color>
+    <color name="text_primary">#E7EBF0</color>
+</resources>

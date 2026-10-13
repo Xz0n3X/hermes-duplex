@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The bridge is plain ws:// on the trusted local bridge addresses. Cleartext
+  is permitted for those hosts only; nothing else in this app may talk over
+  an unencrypted socket.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">100.105.180.73</domain>
+        <domain includeSubdomains="false">192.168.1.48</domain>
+    </domain-config>
+</network-security-config>

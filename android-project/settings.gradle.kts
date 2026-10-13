@@ -5,6 +5,7 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -13,5 +14,9 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "hermes-duplex"
+rootProject.name = "HermesDuplex"
+
+//: The phone app, the watch app, and what they both need.
+include(":core")
 include(":app")
+include(":wear")

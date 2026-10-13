@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The tile Google TV shows on the home row. A launcher icon will not do:
+  the leanback launcher draws a 320x180 landscape banner and nothing else,
+  and an app without one is either blank or absent from the row.
+
+  The wake glyph on the accent, which is the same pairing the app opens
+  with, so the tile and the first screen are recognisably one app.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/accent" />
+        </shape>
+    </item>
+    <item
+        android:drawable="@drawable/ic_wake"
+        android:gravity="center"
+        android:width="72dp"
+        android:height="72dp" />
+</layer-list>
