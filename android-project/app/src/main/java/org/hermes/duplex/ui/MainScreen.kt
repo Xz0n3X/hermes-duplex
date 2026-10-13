@@ -523,12 +523,6 @@ private fun Composer(session: MainSession) {
             // way out and nothing said so.
             HeadsetButton(session)
         }
-        Text(
-            text = stringResource(if (session.duplex) R.string.composer_tip_live else R.string.composer_tip),
-            color = Palette.textTertiary,
-            fontSize = 10.sp,
-            modifier = Modifier.padding(start = 6.dp, top = 2.dp),
-        )
     }
 }
 
@@ -889,6 +883,11 @@ private fun RewriteHold(session: MainSession) {
                             val event = awaitPointerEvent()
                             event.changes.forEach { it.consume() }
                         } while (event.changes.any { it.pressed })
+                        // A different, lighter buzz on release: pressed and
+                        // released must feel like two different things.
+                        haptic.performHapticFeedback(
+                            androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove
+                        )
                         session.stopRewrite()
                     }
                 }

@@ -267,6 +267,7 @@ class MainSession(private val activity: ComponentActivity) {
 
     fun onDestroy(finishing: Boolean) {
         handler.removeCallbacksAndMessages(null)
+        runCatching { tones?.release() }
         // Speaker belongs to the service-backed client, not this activity.
         if (finishing) Speaker.shutdown()
     }
@@ -977,14 +978,40 @@ class MainSession(private val activity: ComponentActivity) {
         client?.sendCommand(JSONObject().put("type", "stop"))
     }
 
+    /**
+     * Tones for the rewrite button: one on press, a different one on release.
+     *
+     * A hold has no click to say it registered, and the microphone opens a
+     * moment later, so the sound is the confirmation. Played through the
+     * media stream so it follows the phone's media volume; the haptics, in
+     * the gesture, cover the case where that is turned down.
+     */
+    private val tones by lazy {
+        runCatching { android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 80) }.getOrNull()
+    }
+    private var rewriteStart: Runnable? = null
+
     fun stopRewrite() {
         rewriteHeld = false
+        // Released before the microphone had opened: nothing to stop.
+        rewriteStart?.let { handler.removeCallbacks(it); rewriteStart = null }
         client?.stopRewriteCapture()
+        // After the capture is closed, so the tone is never heard by it.
+        tones?.startTone(android.media.ToneGenerator.TONE_PROP_ACK, 180)
     }
 
     fun startRewrite() {
         rewriteHeld = true
-        withConnection { if (rewriteHeld) client?.startRewriteCapture() }
+        // The press tone first, and the microphone a beat later: opened at the
+        // same instant it would record the beep and the draft would start with
+        // whatever the transcriber made of it.
+        tones?.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, 90)
+        val open = Runnable {
+            rewriteStart = null
+            withConnection { if (rewriteHeld) client?.startRewriteCapture() }
+        }
+        rewriteStart = open
+        handler.postDelayed(open, 130)
     }
 
     /**
