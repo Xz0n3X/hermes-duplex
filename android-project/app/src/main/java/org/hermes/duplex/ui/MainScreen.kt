@@ -135,7 +135,12 @@ fun MainScreen(session: MainSession, onNavigate: (Destination) -> Unit) {
                 )
                 StatusStrip(session)
                 UsageBanner(session.usage) { onNavigate(Destination.USAGE) }
-                ThreadList(session, Modifier.weight(1f))
+                // The thread, with the collapsed suggestions button laid over its
+                // bottom-right corner: an overlay, so it takes no row of its own.
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    ThreadList(session, Modifier.fillMaxSize())
+                    CollapsedSuggestions(session, Modifier.align(Alignment.BottomEnd))
+                }
                 SuggestionStrip(session)
                 Composer(session)
             }
@@ -311,23 +316,10 @@ private fun SuggestionStrip(session: MainSession) {
     val offers = session.offers
     if (offers.isEmpty()) return
 
-    if (session.offersDismissed) {
-        Text(
-            text = stringResource(
-                if (offers.size == 1) R.string.suggestions_restore else R.string.suggestions_restore_plural,
-                offers.size,
-            ),
-            color = Palette.textSecondary,
-            fontSize = 12.sp,
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 4.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .border(androidx.compose.foundation.BorderStroke(1.dp, Palette.borderDefault), RoundedCornerShape(14.dp))
-                .clickable { session.restoreOffers() }
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-        )
-        return
-    }
+    // Set aside: nothing here. A row that said "N suggestions" held a whole
+    // strip of the screen for one line of text; the way back is now a small
+    // round button over the thread -- see CollapsedSuggestions.
+    if (session.offersDismissed) return
 
     Row(
         Modifier
@@ -905,5 +897,39 @@ private fun RewriteHold(session: MainSession) {
                 size = 32.dp,
             )
         }
+    }
+}
+
+/**
+ * What is left of the suggestions after they are set aside: one round button,
+ * over the bottom-right of the thread. It sits on top of the content rather
+ * than in its own row, so putting the suggestions away gives the vertical
+ * space back; tapping it brings the strip back.
+ */
+@Composable
+private fun CollapsedSuggestions(session: MainSession, modifier: Modifier) {
+    val count = session.offers.size
+    if (count == 0 || !session.offersDismissed) return
+    Box(
+        modifier
+            .padding(end = 14.dp, bottom = 12.dp)
+            .size(46.dp)
+            .clip(CircleShape)
+            .background(Palette.bgOverlay)
+            .border(androidx.compose.foundation.BorderStroke(1.dp, Palette.accent.copy(alpha = 0.5f)), CircleShape)
+            .clickable { session.restoreOffers() }
+            .semantics { contentDescription = "Show $count suggestion${if (count == 1) "" else "s"}" },
+        contentAlignment = Alignment.Center,
+    ) {
+        Ico(R.drawable.ic_idea, tint = Palette.accent, size = 24.dp)
+        // How many are waiting, as a small badge.
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .size(18.dp)
+                .clip(CircleShape)
+                .background(Palette.accent),
+            contentAlignment = Alignment.Center,
+        ) { Text("$count", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
     }
 }
