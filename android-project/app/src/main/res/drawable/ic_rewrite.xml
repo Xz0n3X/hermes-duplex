@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A wand with sparkles: speak, and the local model tidies it into a message.
-     One tone, tinted where it is used, like every other icon in the app. -->
+<!-- A wand with three sparkles: speak, and the local model tidies it into a
+     message. Drawn so the visible shape, not its box, is centred in the
+     24 x 24 square, which a diagonal wand with stars off to one side is not by
+     default. One tone, tinted where it is used. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -8,5 +10,5 @@
     android:viewportHeight="24">
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M7.5,5.6L10,7 8.6,4.5 10,2 7.5,3.4 5,2l1.4,2.5L5,7zM19.5,15.4L17,14l1.4,2.5L17,19l2.5,-1.4L22,19l-1.4,-2.5L22,14zM22,2l-2.5,1.4L17,2l1.4,2.5L17,7l2.5,-1.4L22,7l-1.4,-2.5zM13.34,12.78l2.44,-2.44 -1.12,-1.12 -2.44,2.44 1.12,1.12zM14.37,7.29l-1.34,-1.34c-0.39,-0.39 -1.02,-0.39 -1.41,0L1.29,16.28c-0.39,0.39 -0.39,1.02 0,1.41l1.34,1.34c0.39,0.39 1.02,0.39 1.41,0L14.37,8.7c0.39,-0.39 0.39,-1.02 0,-1.41z" />
+        android:pathData="M4.27,21.22L13.75,11.75L11.97,9.97L2.50,19.45ZM15.83,3.06L16.86,6.86L20.66,7.89L16.86,8.91L15.83,12.72L14.81,8.91L11.00,7.89L14.81,6.86ZM19.36,13.18L19.82,14.87L21.50,15.32L19.82,15.77L19.36,17.46L18.91,15.77L17.23,15.32L18.91,14.87ZM8.59,2.78L9.04,4.46L10.72,4.92L9.04,5.37L8.59,7.05L8.14,5.37L6.45,4.92L8.14,4.46Z" />
 </vector>

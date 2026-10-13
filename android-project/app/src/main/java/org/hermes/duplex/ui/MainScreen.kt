@@ -847,7 +847,7 @@ private fun RewriteHold(session: MainSession) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (held) {
             Text(
-                "Listening\u2026 release to finish",
+                "Listening\u2026",
                 color = Palette.accent, fontSize = 12.sp, fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(end = 10.dp),
             )
