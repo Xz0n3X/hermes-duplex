@@ -144,11 +144,17 @@ private fun TurnRow(message: ConversationStore.Message, session: MainSession) {
                     stringResource(if (speaking) R.string.pause_message else R.string.read_message),
                 ) { session.speakMessage(message) }
             }
-            // The lightbulb appears only where there is something behind it.
-            if (message.suggestions.isNotEmpty()) {
-                Glyph(R.drawable.ic_idea, "Bring back this reply's suggestions", Palette.accent) {
-                    session.restoreSuggestions(message)
-                }
+            // The lightbulb is on every reply from the agent. Blue: it already has
+            // suggestions, and a tap brings them back. Grey: it has none yet, and
+            // a tap asks for them. It used to appear only once suggestions
+            // existed, which for most replies was never.
+            if (!you && !message.streaming) {
+                val has = message.suggestions.isNotEmpty()
+                Glyph(
+                    R.drawable.ic_idea,
+                    if (has) "Bring back this reply's suggestions" else "Think of suggestions for this reply",
+                    if (has) Palette.accent else Palette.textTertiary,
+                ) { if (has) session.restoreSuggestions(message) else session.suggestFor(message) }
             }
         }
 

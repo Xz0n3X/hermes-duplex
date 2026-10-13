@@ -358,7 +358,9 @@ class DuplexClient(
         suggestionsDismissed = false
         // Also kept with the reply itself, so its lightbulb can bring them
         // back once newer answers have pushed them out of the strip.
-        ConversationStore.offer(offers)
+        val turn = event.optString("turn")
+        if (turn.isNotEmpty()) ConversationStore.offerFor(turn, offers)
+        else ConversationStore.offer(offers)
     }
 
     /**

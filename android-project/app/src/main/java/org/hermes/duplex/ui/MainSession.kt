@@ -499,7 +499,19 @@ class MainSession(private val activity: ComponentActivity) {
             }
             "wake_skipped" -> setStatus(activity.getString(R.string.status_wake), Tone.NEUTRAL)
             "wake_ready" -> setStatus(activity.getString(R.string.wake_ready), Tone.HEARING)
-            "suggestions" -> refreshOffers()
+            "suggestions" -> {
+                refreshOffers()
+                // The message the offers were filed against has changed -- its
+                // bulb turns blue -- so the thread has to be redrawn too.
+                refreshConversation()
+                val turn = event.optString("turn")
+                if (turn.isNotEmpty() && turn == suggestingTurn) {
+                    suggestingTurn = ""
+                    if ((event.optJSONArray("items")?.length() ?: 0) == 0) {
+                        toast("No suggestions came back for that reply")
+                    }
+                }
+            }
             "projects" -> refreshSidebar()
             "usage" -> renderUsage(event)
             "chat_opened" -> {
@@ -1210,6 +1222,38 @@ class MainSession(private val activity: ComponentActivity) {
     fun askForIdea() {
         client?.sendCommand(JSONObject().put("type", "project_idea"))
         toast("Asking your local LLM for a private project idea…")
+    }
+
+    /** The reply a bulb was pressed on, until its suggestions come back. */
+    private var suggestingTurn = ""
+
+    /**
+     * Ask for suggestions for one reply that has none yet.
+     *
+     * Every agent reply has a bulb: blue when it already has suggestions (the
+     * tap brings them back), grey when it has not, and this is the grey one.
+     * The reply and the question before it go to the bridge, which asks the
+     * local model and sends the answer back tagged with the same reply.
+     */
+    fun suggestFor(message: ConversationStore.Message) {
+        val list = messages
+        var at = list.indexOfFirst { it === message }
+        if (at < 0) at = list.indexOfFirst { it.at == message.at && it.text == message.text }
+        val question = (at - 1 downTo 0)
+            .map { list[it] }
+            .firstOrNull { it.role == ConversationStore.Role.YOU }?.text.orEmpty()
+        val turn = message.turnId.ifEmpty { message.at.toString() }
+        suggestingTurn = turn
+        toast("Thinking of suggestions\u2026")
+        withConnection {
+            client?.sendCommand(
+                JSONObject()
+                    .put("type", "suggest_for")
+                    .put("turn", turn)
+                    .put("question", question)
+                    .put("answer", message.text)
+            )
+        }
     }
 
     /** Bring back the offers a particular reply made. */

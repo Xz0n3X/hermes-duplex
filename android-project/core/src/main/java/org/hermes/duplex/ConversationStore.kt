@@ -381,6 +381,23 @@ object ConversationStore {
     }
 
     /**
+     * Hang a set of offers off one particular reply, named by `turn`: its
+     * transcript id, or for a message said in this app the time it was made.
+     * The bridge says which reply it generated them for, so asking from an old
+     * message's bulb files the answer there and not on the newest reply.
+     */
+    @Synchronized
+    fun offerFor(turn: String, suggestions: List<Pair<String, String>>) {
+        val index = messages.indexOfLast {
+            it.role == Role.HERMES &&
+                (it.turnId == turn || (it.turnId.isEmpty() && it.at.toString() == turn))
+        }
+        if (index < 0) return
+        messages[index] = messages[index].copy(suggestions = suggestions)
+        revision++
+    }
+
+    /**
      * Mark a turn as waiting for its steps, or fill them in.
      *
      * Addressed by transcript id rather than by position: the fetch is a
