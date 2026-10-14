@@ -58,6 +58,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
@@ -361,9 +362,37 @@ private fun SuggestionStrip(session: MainSession) {
                 )
             }
         }
-        IconTap(R.drawable.ic_refresh, "Refresh suggestions", { session.refreshSuggestions() })
-        IconTap(R.drawable.ic_close, "Set suggestions aside", { session.dismissOffers() })
+        // The bar's two controls, as round floating buttons at its right end,
+        // like the one the strip collapses into. Beside the chips rather than on
+        // top of them, so a chip is never hidden under a button.
+        FabButton(R.drawable.ic_refresh, "Refresh suggestions", Modifier.padding(start = 8.dp)) {
+            session.refreshSuggestions()
+        }
+        FabButton(R.drawable.ic_close, "Set suggestions aside", Modifier.padding(start = 8.dp)) {
+            session.dismissOffers()
+        }
     }
+}
+
+/** A round button that stands off the surface: a circle, a hairline and a soft shadow. */
+@Composable
+private fun FabButton(
+    @androidx.annotation.DrawableRes icon: Int,
+    description: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier
+            .shadow(3.dp, CircleShape)
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(Palette.bgOverlay)
+            .border(androidx.compose.foundation.BorderStroke(1.dp, Palette.borderDefault), CircleShape)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) { Ico(icon, tint = Palette.textPrimary, size = 20.dp) }
 }
 
 // -- composer ---------------------------------------------------------------------------------------------------
