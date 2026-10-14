@@ -322,15 +322,17 @@ private fun SuggestionStrip(session: MainSession) {
     // round button over the thread -- see CollapsedSuggestions.
     if (session.offersDismissed) return
 
-    Row(
+    // The chips run the full width of the bar and the two controls float over
+    // its right end, so nothing is boxed off for them and the suggestions show
+    // through behind them.
+    Box(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             Modifier
-                .weight(1f)
+                .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -361,38 +363,35 @@ private fun SuggestionStrip(session: MainSession) {
                         .padding(horizontal = 14.dp, vertical = 8.dp),
                 )
             }
+            // Room for the two controls once scrolled to the end, so the last
+            // chip is never left underneath them.
+            androidx.compose.foundation.layout.Spacer(Modifier.size(width = 72.dp, height = 1.dp))
         }
-        // The bar's two controls, as round floating buttons at its right end,
-        // like the one the strip collapses into. Beside the chips rather than on
-        // top of them, so a chip is never hidden under a button.
-        FabButton(R.drawable.ic_refresh, "Refresh suggestions", Modifier.padding(start = 8.dp)) {
-            session.refreshSuggestions()
-        }
-        FabButton(R.drawable.ic_close, "Set suggestions aside", Modifier.padding(start = 8.dp)) {
-            session.dismissOffers()
+        // Small, bare icons: no fill, no outline, no shadow. They are drawn over
+        // the chips, so anything with a background would hide the suggestion
+        // behind it.
+        Row(Modifier.align(Alignment.CenterEnd)) {
+            QuietButton(R.drawable.ic_refresh, "Refresh suggestions") { session.refreshSuggestions() }
+            QuietButton(R.drawable.ic_close, "Set suggestions aside") { session.dismissOffers() }
         }
     }
 }
 
-/** A round button that stands off the surface: a circle, a hairline and a soft shadow. */
+/** A small icon that can be pressed and has nothing behind it. */
 @Composable
-private fun FabButton(
+private fun QuietButton(
     @androidx.annotation.DrawableRes icon: Int,
     description: String,
-    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     Box(
-        modifier
-            .shadow(3.dp, CircleShape)
-            .size(40.dp)
+        Modifier
+            .size(32.dp)
             .clip(CircleShape)
-            .background(Palette.bgOverlay)
-            .border(androidx.compose.foundation.BorderStroke(1.dp, Palette.borderDefault), CircleShape)
             .clickable(onClick = onClick)
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
-    ) { Ico(icon, tint = Palette.textPrimary, size = 20.dp) }
+    ) { Ico(icon, tint = Palette.textPrimary, size = 18.dp) }
 }
 
 // -- composer ---------------------------------------------------------------------------------------------------
