@@ -367,9 +367,8 @@ private fun SuggestionStrip(session: MainSession) {
             // chip is never left underneath them.
             androidx.compose.foundation.layout.Spacer(Modifier.size(width = 72.dp, height = 1.dp))
         }
-        // Small, bare icons: no fill, no outline, no shadow. They are drawn over
-        // the chips, so anything with a background would hide the suggestion
-        // behind it.
+        // Small round buttons over the right end of the chips. Their fill is
+        // translucent, so the suggestions behind them are dimmed, not hidden.
         Row(Modifier.align(Alignment.CenterEnd)) {
             QuietButton(R.drawable.ic_refresh, "Refresh suggestions") { session.refreshSuggestions() }
             QuietButton(R.drawable.ic_close, "Set suggestions aside") { session.dismissOffers() }
@@ -377,7 +376,13 @@ private fun SuggestionStrip(session: MainSession) {
     }
 }
 
-/** A small icon that can be pressed and has nothing behind it. */
+/**
+ * One of the bar's two controls: a small round button with a fill and a hairline.
+ *
+ * The fill is slightly see-through, so the chips running underneath still show
+ * faintly instead of being blacked out, but it is a real button -- a circle you
+ * can see the edge of -- and not a bare glyph.
+ */
 @Composable
 private fun QuietButton(
     @androidx.annotation.DrawableRes icon: Int,
@@ -386,8 +391,11 @@ private fun QuietButton(
 ) {
     Box(
         Modifier
+            .padding(start = 6.dp)
             .size(32.dp)
             .clip(CircleShape)
+            .background(Palette.bgOverlay.copy(alpha = 0.82f))
+            .border(androidx.compose.foundation.BorderStroke(1.dp, Palette.borderDefault), CircleShape)
             .clickable(onClick = onClick)
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
