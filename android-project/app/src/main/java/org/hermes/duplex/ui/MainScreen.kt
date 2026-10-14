@@ -913,10 +913,10 @@ private fun CollapsedSuggestions(session: MainSession, modifier: Modifier) {
     Box(
         modifier
             .padding(end = 14.dp, bottom = 12.dp)
+            // No circle or outline behind it: just the bulb. The 46 dp box is kept
+            // as the tap target, so it is no harder to hit.
             .size(46.dp)
             .clip(CircleShape)
-            .background(Palette.bgOverlay)
-            .border(androidx.compose.foundation.BorderStroke(1.dp, Palette.accent.copy(alpha = 0.5f)), CircleShape)
             .clickable { session.restoreOffers() }
             .semantics { contentDescription = "Show $count suggestion${if (count == 1) "" else "s"}" },
         contentAlignment = Alignment.Center,
